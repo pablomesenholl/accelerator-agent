@@ -26,4 +26,11 @@ Project Log
 	Do the math to match momentum width to space width of fodo cell
 	Run improved FODO cell
 	Create python analysis script to plot: envelopes, emittance, corr and phase space snapshots
+26.09.26:
+	Inspect plots of 1cell FODO simulations
+	Create directories for 10 & 100 fodo periods
+28.09.26:
+	Plot analytic behaviour of FODO next to OPLAX 
+	Adjust input file to work for 10cell fodo case, including a lattice generator
+	Postprocess and plot 10cell fodo with analytic behaviour of OPALX initial values
 
