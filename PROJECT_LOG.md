@@ -33,4 +33,8 @@ Project Log
 	Plot analytic behaviour of FODO next to OPLAX 
 	Adjust input file to work for 10cell fodo case, including a lattice generator
 	Postprocess and plot 10cell fodo with analytic behaviour of OPALX initial values
+29.09.26:
+	Install Docker
+	Install other dependencies for magnus
+	Install magnus locally and make it work
 
