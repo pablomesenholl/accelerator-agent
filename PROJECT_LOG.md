@@ -37,4 +37,23 @@ Project Log
 	Install Docker
 	Install other dependencies for magnus
 	Install magnus locally and make it work
+30.09.26:
+	Do a ColliderAgent specific run manually on Magnus for MadGraph-compiler only:
+		magnus run madgraph-compile --\
+			--model sm\
+			--process "pp > e+e-"\
+			--output smoke_test/dy
+	Found 2 bugs of magnus with WSL and Docker desktop windows setup:
+		1. MG5 3.7.0 auto-update shutdown bug
+		   → fixed with `set auto_update 0`
 
+		2. WSL + Docker Desktop networking mismatch
+		   → fixed with
+	    	MAGNUS_ADDRESS=http://host.docker.internal:8017
+01.09.26:
+	Fork magnus from upstream and create a new branch: fix-wsl-docker-networking
+	In that branch fix the WSL and Docker Desktop mismatch on magnus source level
+	Networking mismatch fix works and is committed
+	Think about adding a regression test, a small documentation, pushing and creating an issue for magnus
+	Inspect ColliderAgent skills
+	Create a beta Skills architecture for accelerator-agent based on ColliderAgent skills		
