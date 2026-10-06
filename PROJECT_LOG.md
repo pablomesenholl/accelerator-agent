@@ -59,7 +59,9 @@ Project Log
 	Create a beta Skills architecture for accelerator-agent based on ColliderAgent skills		
 5.10.26:
 	Activate Wolfram licence for ColliderAgent
-	Fix MadGraph specific bugs (there were 2) in ColliderAgent in separate fork
+	Fixed MadGraph specific bugs (there were 2) in ColliderAgent in separate fork
 	New way to launch Magnus local (scripts/setup_magnus.py) such that local branch with updated blueprints are used
 	Do the pp -> l+l- test of ColliderAgent using Codex with updated ColliderAgent fork
 	Test worked: 50000 events and dilepton invariant mass plot and pdf
+6.10.26:
+	
