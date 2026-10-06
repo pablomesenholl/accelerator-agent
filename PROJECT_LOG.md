@@ -64,4 +64,8 @@ Project Log
 	Do the pp -> l+l- test of ColliderAgent using Codex with updated ColliderAgent fork
 	Test worked: 50000 events and dilepton invariant mass plot and pdf
 6.10.26:
+	Create a Dockerfile for OPALX serial build
+	Build the OPALX image
+	Verify successfully the OPALX container against my 1cell FODO simulation manually
+	Add pip, python and magnus sdk directly to the OPALX container
 	

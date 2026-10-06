@@ -1,0 +1,59 @@
+id: opalx-simulation
+title: OPALX Simulation
+description: Run an OPALX accelerator simulation from an input file or simulation bundle and return the generated output files.
+
+code: |
+  Simulation = Annotated[FileSecret, {
+      "label": "Simulation Input",
+      "description": "OPALX input file or simulation directory containing the input file and any required auxiliary files.",
+      "placeholder": "Upload an OPALX .in file or simulation directory",
+  }]
+
+  InputFile = Annotated[str, {
+      "label": "Input File",
+      "description": "Name or relative path of the OPALX .in file to execute, for example fodo.in.",
+      "placeholder": "fodo.in",
+      "allow_empty": False,
+  }]
+
+  Output = Annotated[str, {
+      "label": "Output Path",
+      "description": "Local path where Magnus should download the simulation results after the job completes.",
+      "placeholder": "opalx-output",
+      "allow_empty": False,
+  }]
+
+  def blueprint(
+      simulation: Simulation,
+      input_file: InputFile,
+      output: Output = "opalx-output",
+  ):
+      safe_simulation = simulation.replace("'", "'\\''")
+      safe_input_file = input_file.replace("'", "'\\''")
+      safe_output = output.replace("'", "'\\''")
+
+      description = f"""## OPALX Simulation
+  - Input file: `{input_file}`
+  - Execution backend: OPALX serial CPU
+  """
+
+      entry_command = f"""
+  python3 scripts/run_opalx_simulation.py \
+      --input_secret '{safe_simulation}' \
+      --input_file '{safe_input_file}' \
+      --target_path '{safe_output}'
+  """
+
+      submit_job(
+          task_name="[Blueprint] OPALX Simulation",
+          description=description,
+          namespace="pablomesenholl",
+          repo_name="accelerator-agent",
+          entry_command=entry_command,
+          container_image="docker://opalx:serial",
+          gpu_type="cpu",
+          gpu_count=0,
+          cpu_count=1,
+          memory_demand="4G",
+          job_type=JobType.A2,
+      )

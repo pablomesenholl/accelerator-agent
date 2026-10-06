@@ -35,5 +35,18 @@ RUN cmake -S . -B build_serial \
 # Make "opalx" available as a normal command
 RUN ln -s /opt/OPALX/build_serial/src/opalx /usr/local/bin/opalx
 
+# Python runtime for Magnus integration
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install the same Magnus SDK version used on the host
+RUN python3 -m venv /opt/magnus-venv \
+    && /opt/magnus-venv/bin/pip install --no-cache-dir "magnus-sdk==0.8.2"
+
+# Make Python, pip and Magnus from the virtual environment available normally
+ENV PATH="/opt/magnus-venv/bin:${PATH}"
+
 # Magnus jobs will work in this directory
 WORKDIR /work
