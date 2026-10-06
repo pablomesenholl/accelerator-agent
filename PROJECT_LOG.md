@@ -50,10 +50,16 @@ Project Log
 		2. WSL + Docker Desktop networking mismatch
 		   → fixed with
 	    	MAGNUS_ADDRESS=http://host.docker.internal:8017
-01.09.26:
+01.10.26:
 	Fork magnus from upstream and create a new branch: fix-wsl-docker-networking
 	In that branch fix the WSL and Docker Desktop mismatch on magnus source level
 	Networking mismatch fix works and is committed
 	Think about adding a regression test, a small documentation, pushing and creating an issue for magnus
 	Inspect ColliderAgent skills
 	Create a beta Skills architecture for accelerator-agent based on ColliderAgent skills		
+5.10.26:
+	Activate Wolfram licence for ColliderAgent
+	Fix MadGraph specific bugs (there were 2) in ColliderAgent in separate fork
+	New way to launch Magnus local (scripts/setup_magnus.py) such that local branch with updated blueprints are used
+	Do the pp -> l+l- test of ColliderAgent using Codex with updated ColliderAgent fork
+	Test worked: 50000 events and dilepton invariant mass plot and pdf
