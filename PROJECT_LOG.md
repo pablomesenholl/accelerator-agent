@@ -68,4 +68,7 @@ Project Log
 	Build the OPALX image
 	Verify successfully the OPALX container against my 1cell FODO simulation manually
 	Add pip, python and magnus sdk directly to the OPALX container
-	
+	Write the opalx-simulate blueprint
+	Write the opalx-simulate runner
+	Configure opalx blueprint for magnus
+	Test FODO 1cell using Magnus and the new blueprint: Successfull	
