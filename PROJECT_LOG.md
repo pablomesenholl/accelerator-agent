@@ -75,3 +75,5 @@ Project Log
 7.10.26:
 	Copy Magnus SKILL.md from ColliderAgent to accelerator and minimally adjust to general Magnus configuration
 	Write a first version of the opalx-simulator skill	
+8.10.26:
+	Test first version opalx-simulator skill using the Fodo-no-spacecharge example: success
