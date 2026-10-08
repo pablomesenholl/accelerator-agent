@@ -77,3 +77,5 @@ Project Log
 	Write a first version of the opalx-simulator skill	
 8.10.26:
 	Test first version opalx-simulator skill using the Fodo-no-spacecharge example: success
+	Create a uv locked reproducible venv for the project, which anyone should be able to install
+
