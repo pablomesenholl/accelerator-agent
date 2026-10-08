@@ -72,3 +72,6 @@ Project Log
 	Write the opalx-simulate runner
 	Configure opalx blueprint for magnus
 	Test FODO 1cell using Magnus and the new blueprint: Successfull	
+7.10.26:
+	Copy Magnus SKILL.md from ColliderAgent to accelerator and minimally adjust to general Magnus configuration
+	Write a first version of the opalx-simulator skill	
