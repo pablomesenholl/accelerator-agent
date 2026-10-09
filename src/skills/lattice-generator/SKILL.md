@@ -71,11 +71,17 @@ Do not introduce additional physical effects or lattice elements that the user d
 
 ### Step 2: Consult OPALX documentation
 
-Use **The OPALX Universe** as the primary reference for OPALX input syntax, commands, conventions, and supported physics.
+Use `references/opalx-input-reference.md` as the **primary working reference** for OPALX input syntax, commands, conventions, and supported simulation configurations.
 
-Consult the relevant sections of the documentation before generating unfamiliar OPALX constructs.
+Follow this documentation priority:
 
-Important topics include:
+1. **Local skill reference — first choice.** Consult `references/opalx-input-reference.md` for the syntax, parameter conventions, and examples relevant to the requested simulation.
+2. **Official OPALX documentation — fallback.** If the local reference does not sufficiently cover the requested functionality, consult *The OPALX Universe*, maintained in the official OPALX documentation repository.
+3. **Official OPALX source and regression examples — additional fallback.** If the documentation is ambiguous, potentially outdated, or incomplete, consult the official OPALX repositories to clarify the supported input interface.
+
+**External documentation does not need to be accessed for every input generation task.** If the local reference contains sufficient information to construct the requested simulation input, proceed directly with generation without consulting external sources.
+
+Relevant documentation topics include:
 
 - Input language and command syntax.
 - Physical units and coordinate conventions.
@@ -86,21 +92,17 @@ Important topics include:
 - Output and diagnostic configuration.
 - External file dependencies.
 
-When available, consult `references/opalx-input-reference.md` for a concise summary of relevant OPALX syntax and examples.
+Use the official documentation to extend the information available in the local reference when necessary, rather than retrieving the full manual for every task.
 
-For syntax not covered by the local reference, consult the full OPALX documentation.
+Official sources:
 
-The official OPALX repository and its maintained regression examples may be consulted to resolve ambiguities or identify changes to the documented input interface.
-
-References:
-
-- [OPALX GitHub repository](https://github.com/OPALX-project/OPALX)
 - [OPALX documentation repository](https://github.com/OPALX-project/opalx-manual)
+- [OPALX GitHub repository](https://github.com/OPALX-project/OPALX)
 - [OPALX regression tests](https://github.com/OPALX-project/regression-tests-x)
 
 **Important:** Distinguish current OPALX syntax from legacy OPAL syntax. Do not assume that historical OPAL commands or parameters remain supported by OPALX.
 
-Do not invent undocumented commands, attributes, or physical models.
+Do not invent undocumented commands, attributes, or physical models. If the required syntax cannot be established from the available references, report the limitation rather than guessing.
 
 ### Step 3: Construct the OPALX input file
 
@@ -252,6 +254,6 @@ Primary reference:
 
 Skill-specific reference:
 
-- `references/opalx-input-reference.md` — concise OPALX syntax guide and usage conventions (to be added).
+- `references/opalx-input-reference.md` — concise OPALX syntax guide and usage conventions.
 
 The reference documentation supports input generation but does not replace the official OPALX documentation for unfamiliar or evolving features.

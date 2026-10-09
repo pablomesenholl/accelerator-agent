@@ -78,4 +78,7 @@ Project Log
 8.10.26:
 	Test first version opalx-simulator skill using the Fodo-no-spacecharge example: success
 	Create a uv locked reproducible venv for the project, which anyone should be able to install
+	Create a first version of the lattice generator skill
+9.10.26:
+	Create a first version of the reference for the lattice generator skill
 
