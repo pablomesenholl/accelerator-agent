@@ -1,6 +1,6 @@
 # OPALX Input Reference
 
-**Local working reference for the `lattice-generator` skill.** Use this document to construct OPALX `.in` files and their supporting input directories. It summarizes the **current OPALX** language and commonly used accelerator/beam/tracking interfaces; it is not a fixed lattice template, a complete catalog of every feature, or an input validator.
+**Local working reference for the `lattice-generator` skill.** Use this document to construct OPALX `.in` files and their supporting input directories. It summarizes the **current OPALX** (October 2026) language and commonly used accelerator/beam/tracking interfaces; it is not a fixed lattice template, a complete catalog of every feature, or an input validator.
 
 ## 1. Purpose, scope, and documentation priority
 
@@ -8,7 +8,7 @@
 
 **Generation boundary:** describe and write the requested `.in` and auxiliary files. Do not run OPALX, Magnus, parsing/physics checks, or numerical tests. Input validation belongs to `lattice-validator`; execution belongs to `opalx-simulator`.
 
-**Source basis:** the supplied 456-page *The OPALX Universe* PDF, primarily its sections explicitly marked **OPALX**; checked against selected pages of the [maintained OPALX manual source](https://github.com/OPALX-project/opalx-manual) (October 2026). References to manual pages in this document mean **PDF page numbers**. Exact chapters and URLs are collected in §14.
+**Source basis:** the official online manual, [*The OPALX Universe*](https://opalx-project.github.io/opalx-manual/). Its source files are maintained in the [OPALX manual repository](https://github.com/OPALX-project/opalx-manual). Topic-specific online references are collected in §14.
 
 ## 2. Anatomy of an OPALX input
 
@@ -28,11 +28,11 @@ A typical particle-tracking input contains the following **logical components**,
 
 An input file may use `CALL, FILE="...";` to read additional OPALX files. The generator owns the **entire input bundle**, not just element definitions. For a simple no-space-charge simulation, a single `.in` file is usually enough.
 
-**Dependency principle:** define named distributions before their sources, sources before their source list, the source list before use on the beam; define all elements before assembling a line, and define the beam, line, and solver before the tracking block. See manual §§5, 8 and 10.
+**Dependency principle:** define named distributions before their sources, sources before their source list, the source list before use on the beam; define all elements before assembling a line, and define the beam, line, and solver before the tracking block. See [worked input files](https://opalx-project.github.io/opalx-manual/getting-started/worked-inputs.html), [input language](https://opalx-project.github.io/opalx-manual/user-guide/input-language.html) and [control statements](https://opalx-project.github.io/opalx-manual/user-guide/control-statements/index.html).
 
 ## 3. Input language and commands
 
-OPALX uses a MAD-inspired, free-format, statement-oriented language. End statements with `;`. Unquoted identifiers are case-insensitive (normalized to uppercase); quoted strings and **file paths** retain their contents. `//` and `/* ... */` introduce comments. Parameters can be assigned immediately with `=` or stored as expressions with `:=` for later re-evaluation. (Manual §§8–10, pp. 24–48.)
+OPALX uses a MAD-inspired, free-format, statement-oriented language. End statements with `;`. Unquoted identifiers are case-insensitive (normalized to uppercase); quoted strings and **file paths** retain their contents. `//` and `/* ... */` introduce comments. Parameters can be assigned immediately with `=` or stored as expressions with `:=` for later re-evaluation. (See [input language](https://opalx-project.github.io/opalx-manual/user-guide/input-language.html), [command format](https://opalx-project.github.io/opalx-manual/user-guide/command-format/index.html) and [control statements](https://opalx-project.github.io/opalx-manual/user-guide/control-statements/index.html).)
 
 ### 3.1 Common syntax forms
 
@@ -55,7 +55,7 @@ OPALX uses a MAD-inspired, free-format, statement-oriented language. End stateme
 
 Arithmetic includes `+`, `-`, `*`, `/`, `^`, parentheses and documented mathematical functions such as `sqrt`, `sin`, `cos`, `exp`; arrays use `{...}`. Do not treat illustrative `...` placeholders as actual OPALX syntax. Keep semicolons, variable names, labels, and source references explicit.
 
-`STOP;` and `QUIT;` both terminate the *current input stream*: inside an included `CALL` file they return to the caller; in the main file they end processing. Prefer `QUIT;` at the end of the main input. An included file that terminates early should do so deliberately. (Manual §10.2, pp. 42–43; §10.6, pp. 46–47.)
+`STOP;` and `QUIT;` both terminate the *current input stream*: inside an included `CALL` file they return to the caller; in the main file they end processing. Prefer `QUIT;` at the end of the main input. An included file that terminates early should do so deliberately. (See [control statements](https://opalx-project.github.io/opalx-manual/user-guide/control-statements/index.html).)
 
 ### 3.2 Configuration principles
 
@@ -67,7 +67,7 @@ Arithmetic includes `+`, `-`, `*`, `/`, `^`, parentheses and documented mathemat
 
 ## 4. Units and reference-particle conventions
 
-OPALX uses SI internally, but input **attributes mix SI, accelerator, and normalized units**. This table is a practical selection; consult the attribute's own documentation for others. (Manual §7 pp. 22–23; §§12, 16–17.)
+OPALX uses SI internally, but input **attributes mix SI, accelerator, and normalized units**. This table is a practical selection; consult the attribute's own documentation for others. (See [conventions](https://opalx-project.github.io/opalx-manual/user-guide/conventions/index.html), [elements](https://opalx-project.github.io/opalx-manual/user-guide/elements.html), [beam definitions](https://opalx-project.github.io/opalx-manual/user-guide/beam.html) and [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html).)
 
 | Quantity / attribute | Input convention |
 |---|---|
@@ -101,7 +101,7 @@ REAL beta=sqrt(1.0-1.0/(gamma*gamma));
 REAL P0=gamma*beta*EMASS;         // reference momentum [GeV/c]
 ```
 
-For `FROMFILE` and `EMITTEDFROMFILE`, **omit all three reference-energy attributes**: files supply absolute normalized momenta. Bunch-charge magnitude is ordinarily positive; particle charge sign comes from `CHARGE` (or the selected `PARTICLE`). The manual's overview contains a negative-charge example, but the detailed current beam definition and maintained worked inputs use a positive `BCHARGE`; prefer that convention. (Manual §§5.1, 16.1–16.3, 17.3.)
+For `FROMFILE` and `EMITTEDFROMFILE`, **omit all three reference-energy attributes**: files supply absolute normalized momenta. Bunch-charge magnitude is ordinarily positive; particle charge sign comes from `CHARGE` (or the selected `PARTICLE`). The manual's overview contains a negative-charge example, but the detailed current beam definition and maintained worked inputs use a positive `BCHARGE`; prefer that convention. (See [worked input files](https://opalx-project.github.io/opalx-manual/getting-started/worked-inputs.html), [beam definitions](https://opalx-project.github.io/opalx-manual/user-guide/beam.html) and [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html).)
 
 ## 5. Accelerator elements and placement
 
@@ -117,7 +117,7 @@ Every **placed physical element** needs exactly one documented placement method:
 1. **Path placement:** `ELEMEDGE=s` locates the element entrance at path position `s` in **m**; optional `PSI` rotates about the local longitudinal axis.
 2. **Absolute pose:** explicitly supply at least one of `X`, `Y`, `Z`, `THETA`, `PHI`, with the remaining pose coordinates defaulted as documented; `PSI` can set roll.
 
-Do **not** mix `ELEMEDGE` with an absolute pose. `PSI` alone does not select absolute pose. The order of elements in `LINE` is not a substitute for placement. (Manual §12.1, pp. 60–61.)
+Do **not** mix `ELEMEDGE` with an absolute pose. `PSI` alone does not select absolute pose. The order of elements in `LINE` is not a substitute for placement. (See [elements](https://opalx-project.github.io/opalx-manual/user-guide/elements.html).)
 
 | Shared attribute | Use / convention |
 |---|---|
@@ -130,7 +130,7 @@ Do **not** mix `ELEMEDGE` with an absolute pose. `PSI` alone does not select abs
 
 ### 5.2 Common elements and useful attributes
 
-The following are **independent element examples**, not one assembled lattice. Their placement values are illustrative. (Manual §12, pp. 60–73.)
+The following are **independent element examples**, not one assembled lattice. Their placement values are illustrative. (See [elements](https://opalx-project.github.io/opalx-manual/user-guide/elements.html).)
 
 **Drift, quadrupole and normalized multipole**
 
@@ -153,7 +153,7 @@ MT1: MULTIPOLET, L=0.5, ELEMEDGE=0.0,
     HAPERT=0.04, VAPERT=0.04;
 ```
 
-`TP` has **physical** multipole coefficients (index 0 T, index 1 T/m; up to index 5); `LFRINGE`, `RFRINGE`, `HAPERT`, `VAPERT` are in metres. `ANGLE` [rad] chooses straight (`0`) versus constant-radius curved geometry, while `ROTATION` [rad] is available for straight skew elements. Variable-radius bending is not currently supported. `HAPERT`/`VAPERT` are this model's specific apertures, not substitutes for generic `APERTURE`. (Manual §12.7, pp. 65–66.)
+`TP` has **physical** multipole coefficients (index 0 T, index 1 T/m; up to index 5); `LFRINGE`, `RFRINGE`, `HAPERT`, `VAPERT` are in metres. `ANGLE` [rad] chooses straight (`0`) versus constant-radius curved geometry, while `ROTATION` [rad] is available for straight skew elements. Variable-radius bending is not currently supported. `HAPERT`/`VAPERT` are this model's specific apertures, not substitutes for generic `APERTURE`. (See [elements](https://opalx-project.github.io/opalx-manual/user-guide/elements.html).)
 
 **Constant electric field and constant focusing**
 
@@ -164,7 +164,7 @@ CF1: CONSTANTFOCUSING, L=0.01, ELEMEDGE=0.5,
     STRENGTH=1.5, RADIUS=1.774e-3;
 ```
 
-`CONSTANTEFIELDCAVITY` applies a local uniform DC electric field in **MV/m**; a negative `EZ` accelerates an electron in the local `+z` direction. `CONSTANTFOCUSING` has an application-specific `STRENGTH` and `RADIUS` [m], primarily for DIH tests; do not substitute it for a normal quadrupole without a user request. (Manual §§12.3–12.4, pp. 62–63.)
+`CONSTANTEFIELDCAVITY` applies a local uniform DC electric field in **MV/m**; a negative `EZ` accelerates an electron in the local `+z` direction. `CONSTANTFOCUSING` has an application-specific `STRENGTH` and `RADIUS` [m], primarily for DIH tests; do not substitute it for a normal quadrupole without a user request. (See [elements](https://opalx-project.github.io/opalx-manual/user-guide/elements.html).)
 
 **Field-map-based solenoid and RF structures**
 
@@ -188,7 +188,7 @@ TW1: TRAVELINGWAVE, L=2.8, ELEMEDGE=0.5,
 | `RFCAVITY` | `TYPE="STANDING"`, `VOLT` [MV], `FREQ` [MHz], `LAG` [rad], required `FMAPFN`; `APVETO` exempts this cavity from autophase |
 | `TRAVELINGWAVE` | `VOLT` [MV/m], `FREQ` [MHz], `LAG` [rad], `FMAPFN`, positive integer `NUMCELLS`, `MODE` as fraction of `2π` per cell; map and cell parameters must correspond |
 
-`OPTION.AUTOPHASE` controls automatic RF phase search globally; `APVETO=TRUE` opts out on one RF element. A cavity's map can override a configured frequency when they disagree by more than 1%. The sample file paths above are **placeholders for real files**, not fabricated data. (Manual §§12.8–12.10, pp. 66–68; worked RF input §5.2.)
+`OPTION.AUTOPHASE` controls automatic RF phase search globally; `APVETO=TRUE` opts out on one RF element. A cavity's map can override a configured frequency when they disagree by more than 1%. The sample file paths above are **placeholders for real files**, not fabricated data. (See [elements](https://opalx-project.github.io/opalx-manual/user-guide/elements.html) and the [worked input files](https://opalx-project.github.io/opalx-manual/getting-started/worked-inputs.html).)
 
 **Bends and diagnostics**
 
@@ -206,7 +206,7 @@ P1: PROBE, L=0.001, ELEMEDGE=1.4,
 - `RBEND`/`SBEND`: `ANGLE` [rad], normalized `K0/K1/K2/K3` families [m⁻¹, m⁻², m⁻³, m⁻⁴], `HGAP` [m], `FINT`; `RBEND.L` is a straight-body length and `SBEND.L` an arc length. Use the detailed bend section for edge/geometry limitations.
 - `MONITOR`: `TYPE=SPATIAL` or `TEMPORAL`, `OUTFN` output file. `MARKER` labels a position without field.
 - `PROBE`: `XSTART/XEND/YSTART/YEND/STEP` are **millimetres**, and `OUTFN` names an output.
-- Additional elements including `CYCLOTRONSECTOR`, `LASER`, and special diagnostics have dedicated documentation; consult it before configuring unfamiliar attributes. (Manual §§12.11–12.19, pp. 68–73.)
+- Additional elements including `CYCLOTRONSECTOR`, `LASER`, and special diagnostics have dedicated documentation; consult it before configuring unfamiliar attributes. (See [elements](https://opalx-project.github.io/opalx-manual/user-guide/elements.html).)
 
 ## 6. Beamlines and lattice composition
 
@@ -219,9 +219,9 @@ D2: DRIFT, L=0.3, ELEMEDGE=0.5;
 Cell: LINE=(D1,Q1,D2);
 ```
 
-A second line may include named sublines, e.g. `Machine: LINE=(Cell,OtherCell);` **provided those names and the physical placements are appropriate**. The list order controls traversal; it does not auto-compute `ELEMEDGE` or move/reposition reused elements. For repeated physical elements at different positions, define distinct placed occurrences as needed. (Manual §15.1–15.2, pp. 112–113.)
+A second line may include named sublines, e.g. `Machine: LINE=(Cell,OtherCell);` **provided those names and the physical placements are appropriate**. The list order controls traversal; it does not auto-compute `ELEMEDGE` or move/reposition reused elements. For repeated physical elements at different positions, define distinct placed occurrences as needed. (See [beam lines](https://opalx-project.github.io/opalx-manual/user-guide/beam-lines/index.html).)
 
-`RING=(...)` defines a ring sequence but **does not close its geometry automatically**. Its reference trajectory and explicit six-dimensional entrance poses require dedicated treatment; do not assume that repeating `LINE` elements creates a ring. (Manual §15.3, pp. 113–114.)
+`RING=(...)` defines a ring sequence but **does not close its geometry automatically**. Its reference trajectory and explicit six-dimensional entrance poses require dedicated treatment; do not assume that repeating `LINE` elements creates a ring. (See [beam lines](https://opalx-project.github.io/opalx-manual/user-guide/beam-lines/index.html).)
 
 ## 7. Beam definitions
 
@@ -234,7 +234,7 @@ Beam1: BEAM, PARTICLE=ELECTRON,
     SOURCES=Sources;
 ```
 
-This snippet assumes `Sources` was defined as an `EMISSIONSOURCELIST` (§8). Important `BEAM` attributes (manual §16.1–16.4, pp. 115–118):
+This snippet assumes `Sources` was defined as an `EMISSIONSOURCELIST` (§8). Important `BEAM` attributes (see [beam definitions](https://opalx-project.github.io/opalx-manual/user-guide/beam.html)):
 
 | Attribute | Meaning / input |
 |---|---|
@@ -251,7 +251,7 @@ Defined species in the current manual: `PHOTON`, `ELECTRON`, `POSITRON`, `MUON`,
 
 ## 8. Distributions, emission sources and particle files
 
-**OPALX object chain:** `DISTRIBUTION` → `EMISSIONSOURCE` → `EMISSIONSOURCELIST` → `BEAM.SOURCES`; distributions do **not** belong on `RUN`. (Manual §17, pp. 120–130.)
+**OPALX object chain:** `DISTRIBUTION` → `EMISSIONSOURCE` → `EMISSIONSOURCELIST` → `BEAM.SOURCES`; distributions do **not** belong on `RUN`. (See [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html).)
 
 ```opal
 Dist: DISTRIBUTION, TYPE=GAUSS, NPARTDIST=1000,
@@ -274,7 +274,7 @@ Sources: EMISSIONSOURCELIST=(Source1);
 | `ZEROFACE_R0Z`, `SHIFTED_GREENS_FUNCTION` | Alternative cathode-plane Dirichlet corrections; not simultaneous |
 | `ZEROFACE_MAXSTEPS` | Limit of cathode-plane correction steps; 0 is unlimited |
 
-An `EMISSIONSOURCELIST` can contain multiple named sources, e.g. `Sources: EMISSIONSOURCELIST=(S1,S2);`. Generated one-shot Gaussian/uniform sources use `EMISSIONMODEL=NONE`; emitted flat-top sources can support `ASTRA`. (Manual §§17.1–17.2, pp. 120–121.)
+An `EMISSIONSOURCELIST` can contain multiple named sources, e.g. `Sources: EMISSIONSOURCELIST=(S1,S2);`. Generated one-shot Gaussian/uniform sources use `EMISSIONMODEL=NONE`; emitted flat-top sources can support `ASTRA`. (See [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html).)
 
 ### 8.2 Available distribution types
 
@@ -300,7 +300,7 @@ U: DISTRIBUTION, TYPE=UNIFORM, NPARTDIST=10000,
     SIGMAX=1e-3, SIGMAY=2e-3, SIGMAZ=3e-3;
 ```
 
-For `GAUSS`, position sampling uses internally fixed ±3σ bounds; accepted user cutoffs and `CORRX/CORRY/CORRZ/CORRT` do not currently alter the active sampler. `UNIFORM` positions fill an ellipsoid uniformly by volume and its particles share the reference momentum. (Manual §§17.3.1–17.3.2, pp. 123–124.)
+For `GAUSS`, position sampling uses internally fixed ±3σ bounds; accepted user cutoffs and `CORRX/CORRY/CORRZ/CORRT` do not currently alter the active sampler. `UNIFORM` positions fill an ellipsoid uniformly by volume and its particles share the reference momentum. (See [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html).)
 
 **Correlated Gaussian:**
 
@@ -314,7 +314,7 @@ MG: DISTRIBUTION, TYPE=MULTIVARIATEGAUSS, NPARTDIST=10000,
 
 `CORR` lists the 15 upper-triangle off-diagonal correlations in this order:
 `(x,px), (x,y), (x,py), (x,z), (x,pz), (px,y), (px,py), (px,z), (px,pz), (y,py), (y,z), (y,pz), (py,z), (py,pz), (z,pz)`.
-Use physically meaningful correlations; the matrix must be positive definite. (Manual §17.3.3, pp. 124–125.)
+Use physically meaningful correlations; the matrix must be positive definite. (See [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html).)
 
 **Generated pulsed distribution:**
 
@@ -325,11 +325,11 @@ FT: DISTRIBUTION, TYPE=FLATTOP, NPARTDIST=10000,
     TPULSEFWHM=10e-12, CUTOFFLONG=3;
 ```
 
-`SIGMAX/Y` are transverse ellipse semi-axes for flat-top types. `TRISE/TFALL`, `SIGMAT`, and `TPULSEFWHM` are in seconds; `CUTOFFLONG` truncates Gaussian pulse edges. `OPALFLATTOP` uses the same base pulse specification plus its inventory/modulation attributes. (Manual §§17.3.4–17.3.5, pp. 125–127.)
+`SIGMAX/Y` are transverse ellipse semi-axes for flat-top types. `TRISE/TFALL`, `SIGMAT`, and `TPULSEFWHM` are in seconds; `CUTOFFLONG` truncates Gaussian pulse edges. `OPALFLATTOP` uses the same base pulse specification plus its inventory/modulation attributes. (See [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html).)
 
 ### 8.3 External particle files
 
-**`FROMFILE` format** (plain text, manual §17.3.6, pp. 127–128): first non-comment line contains record count; next line contains case-insensitive column names including `x y z px py pz` in any order; subsequent rows contain the data. Positions are **m**; `px/py/pz` are **absolute** normalized momenta `p/(mc)` (not relative deviations). Lines beginning with `#` and blank lines are ignored.
+**`FROMFILE` format** (plain text; see [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html)): first non-comment line contains record count; next line contains case-insensitive column names including `x y z px py pz` in any order; subsequent rows contain the data. Positions are **m**; `px/py/pz` are **absolute** normalized momenta `p/(mc)` (not relative deviations). Lines beginning with `#` and blank lines are ignored.
 
 ```text
 2
@@ -345,7 +345,7 @@ Particles: DISTRIBUTION, TYPE=FROMFILE,
 
 `NPARTDIST` selects at most that many records from the beginning of the file. **Do not define beam reference `PC`, `ENERGY`, or `GAMMA` for this distribution.** OPALX resolves `DISTRIBUTION.FNAME` relative to the input file.
 
-**`EMITTEDFROMFILE` format** (manual §17.3.7, pp. 129–130): prefer a header with `x y z px py pz birth_time`. `birth_time` is a time offset [s] from source `T0`; positions are offsets from `R0*`, momenta remain absolute normalized values (plus `P0*`). Older positional `x px y py t pz [bin]` files use different time conventions; do not silently mix them. Example of a named-header format:
+**`EMITTEDFROMFILE` format** (see [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html)): prefer a header with `x y z px py pz birth_time`. `birth_time` is a time offset [s] from source `T0`; positions are offsets from `R0*`, momenta remain absolute normalized values (plus `P0*`). Older positional `x px y py t pz [bin]` files use different time conventions; do not silently mix them. Example of a named-header format:
 
 ```text
 2
@@ -361,7 +361,7 @@ EmittedParticles: DISTRIBUTION, TYPE=EMITTEDFROMFILE,
 
 ## 9. Field solvers, space charge and binning
 
-The **lattice generator defines** a `FIELDSOLVER` even when self-fields are disabled; `RUN.FIELDSOLVER` selects it. A current OPALX solver definition requires positive `NX/NY/NZ` mesh sizes, `PARFFTX=TRUE`, `PARFFTY=TRUE`, `PARFFTZ=TRUE`, and a consistent set of all three `BCFFT*` boundary types. (Manual §19, pp. 147–156.)
+The **lattice generator defines** a `FIELDSOLVER` even when self-fields are disabled; `RUN.FIELDSOLVER` selects it. A current OPALX solver definition requires positive `NX/NY/NZ` mesh sizes, `PARFFTX=TRUE`, `PARFFTY=TRUE`, `PARFFTZ=TRUE`, and a consistent set of all three `BCFFT*` boundary types. (See [field solvers](https://opalx-project.github.io/opalx-manual/user-guide/field-solver/index.html).)
 
 ### 9.1 No self-fields
 
@@ -394,7 +394,7 @@ FSOpen: FIELDSOLVER, TYPE=OPEN,
     GREENSF=INTEGRATED, BBOXINCR=2.0;
 ```
 
-`BBOXINCR` is **percent padding** on each side of the moving particle mesh, not an extra fixed length. For active self-fields, nonzero bunch charge is needed when tracking multiple charged macroparticles. Solver mesh resolution and particle number are scientific choices: use requested values or explicitly documented starting settings, not unexplained production defaults. (Manual §§19.1–19.4, pp. 147–152.)
+`BBOXINCR` is **percent padding** on each side of the moving particle mesh, not an extra fixed length. For active self-fields, nonzero bunch charge is needed when tracking multiple charged macroparticles. Solver mesh resolution and particle number are scientific choices: use requested values or explicitly documented starting settings, not unexplained production defaults. (See [field solvers](https://opalx-project.github.io/opalx-manual/user-guide/field-solver/index.html).)
 
 ### 9.3 Optional velocity binning and cathode-plane corrections
 
@@ -418,7 +418,7 @@ FSBinned: FIELDSOLVER, TYPE=OPEN, BINS=Bins,
 - `BINS=NONE` disables binning. `P3M` does not support binning.
 - Cathode-plane corrections are configured on **`EMISSIONSOURCE`**, not just on the solver. `ZEROFACE_R0Z=TRUE` and `SHIFTED_GREENS_FUNCTION=TRUE` are mutually exclusive. Shifted-Green requires an `OPEN` solver and **named binning** to be effective. See the manual before preparing emitted-beam boundary configurations.
 
-(Manual §18 pp. 144–146; §§19.5–19.6 pp. 152–156; worked space-charge example §5.3.)
+(See [structures and binning](https://opalx-project.github.io/opalx-manual/user-guide/structures/index.html), [field solvers](https://opalx-project.github.io/opalx-manual/user-guide/field-solver/index.html) and the [worked input files](https://opalx-project.github.io/opalx-manual/getting-started/worked-inputs.html).)
 
 ## 10. Tracking and run statements
 
@@ -432,7 +432,7 @@ ENDTRACK;
 QUIT;
 ```
 
-This illustrative fragment assumes `Cell`, `Beam1`, `FSNone` were previously defined. (Manual §§20.1–20.2, pp. 167–173.)
+This illustrative fragment assumes `Cell`, `Beam1`, `FSNone` were previously defined. (See [tracking](https://opalx-project.github.io/opalx-manual/user-guide/tracking.html).)
 
 | Construct | Configuration |
 |---|---|
@@ -458,7 +458,7 @@ TRACK, LINE=Cell, BEAM=Beam1,
 ENDTRACK;
 ```
 
-`RUN` in current OPALX **does not accept** `BEAM`, `BEAMS`, `SOURCES`, or `DISTRIBUTION`; these connect through `TRACK` and `BEAM.SOURCES`. `RUN.METHOD="PARALLEL-T"` is legacy syntax, not the current method. Some `TRACK` options (e.g., `TIMEINTEGRATOR`) are parsed for compatibility but do not select the current parallel particle integration kernel. Ring/COF/spectral-tune options require their own documentation. (Manual §§20.1–20.3.)
+`RUN` in current OPALX **does not accept** `BEAM`, `BEAMS`, `SOURCES`, or `DISTRIBUTION`; these connect through `TRACK` and `BEAM.SOURCES`. `RUN.METHOD="PARALLEL-T"` is legacy syntax, not the current method. Some `TRACK` options (e.g., `TIMEINTEGRATOR`) are parsed for compatibility but do not select the current parallel particle integration kernel. Ring/COF/spectral-tune options require their own documentation. (See [tracking](https://opalx-project.github.io/opalx-manual/user-guide/tracking.html).)
 
 ## 11. Runtime options and diagnostics
 
@@ -484,7 +484,7 @@ OPTION, AUTOPHASE=0;
 | `ECHO`, `INFO`, `TRACE`, `WARN` | Parser-message controls; `TRACE` belongs early in the file |
 | `ENABLELINEARTRANSFERMAPS` | Additional numerical transfer-map diagnostic; see its dedicated options before requesting it |
 
-`OPTION, INFO=...;` is **not** the same as the executable's `--info N` verbosity argument. Special diagnostics may require a placed `MONITOR`, `PROBE`, or separate documented command; don't invent a generic output statement. Parser-accepted legacy options may have no effect in the current parallel tracker. (Manual §11, pp. 49–59; §12.13–12.15.)
+`OPTION, INFO=...;` is **not** the same as the executable's `--info N` verbosity argument. Special diagnostics may require a placed `MONITOR`, `PROBE`, or separate documented command; don't invent a generic output statement. Parser-accepted legacy options may have no effect in the current parallel tracker. (See [runtime options](https://opalx-project.github.io/opalx-manual/user-guide/options.html), [diagnostics and output](https://opalx-project.github.io/opalx-manual/user-guide/diagnostics-output.html) and [elements](https://opalx-project.github.io/opalx-manual/user-guide/elements.html).)
 
 ## 12. Input directories and external dependencies
 
@@ -507,7 +507,7 @@ simulation/
 | `CALL, FILE="includes/parameters.in";` | Include the referenced OPALX statements; keep file names and dependency order coherent |
 | `MONITOR` / `PROBE`, `OUTFN="..."` | This names *future simulation output*, not a required pre-existing input file |
 
-OPALX explicitly resolves `DISTRIBUTION.FNAME` relative to its input file. Other constructs have their own documented path rules; use clear relative paths, and consult the corresponding section when path resolution is unclear. The current field-map reader supports **specific map formats**; a filename extension alone does not establish compatibility. (Manual §10.6, §17.3, §26, pp. 46–47, 122, 207–221.)
+OPALX explicitly resolves `DISTRIBUTION.FNAME` relative to its input file. Other constructs have their own documented path rules; use clear relative paths, and consult the corresponding section when path resolution is unclear. The current field-map reader supports **specific map formats**; a filename extension alone does not establish compatibility. (See [control statements](https://opalx-project.github.io/opalx-manual/user-guide/control-statements/index.html), [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html) and [field-map formats](https://opalx-project.github.io/opalx-manual/user-guide/appendix/field-maps/index.html).)
 
 **Do not include produced simulation results** in the input bundle. Validation, OPALX execution and result retrieval are delegated to other skills.
 
@@ -528,33 +528,34 @@ The manual intentionally contains both **OPALX** and historical **OPAL** section
 | Parser-visible features always work | Current `TYPE=CG`, some bin selectors and compatibility knobs are not operational |
 | `LINE` ordering alone positions/duplicates physical magnets | Define an explicit placement strategy for each physical occurrence |
 
-These are **input-generation guidelines**, not validation procedures. (Manual §§11–12, 16–20.)
+These are **input-generation guidelines**, not validation procedures. (See the [runtime options](https://opalx-project.github.io/opalx-manual/user-guide/options.html), [elements](https://opalx-project.github.io/opalx-manual/user-guide/elements.html), [beam definitions](https://opalx-project.github.io/opalx-manual/user-guide/beam.html), [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html), [field solvers](https://opalx-project.github.io/opalx-manual/user-guide/field-solver/index.html) and [tracking](https://opalx-project.github.io/opalx-manual/user-guide/tracking.html).)
 
-## 14. Manual and official source index (fallback only)
+## 14. Online manual and official source index (fallback only)
 
-**This index is for missing or ambiguous features, not a mandatory pre-generation reading list.** If §2–§13 contain the needed syntax, proceed without external calls. Page numbers refer to the **456-page supplied PDF**.
+**This index is for missing or ambiguous features, not a mandatory pre-generation reading list.** If §2–§13 contain the needed syntax, proceed without external calls. Links point to topic-specific pages in the official online [*The OPALX Universe*](https://opalx-project.github.io/opalx-manual/).
 
-| Missing information | *The OPALX Universe* | PDF pages |
-|---|---|---|
-| Complete maintained examples: drift, RF, emitted space charge | §5 Worked Input Files | 13–17 |
-| Units, conventions | §7 Conventions | 22–23 |
-| Input language and execution order | §8 Input Language | 24–32 |
-| Grammar, expressions, labels, arrays | §9 Command Format; Appendix B | 33–41; 222–226 |
-| `TITLE`, variables, `CALL`, `QUIT` | §10 Control Statements | 42–48 |
-| Options, diagnostics and compatibility | §11 Runtime Options | 49–59 |
-| Physical elements, placement, detailed attributes | §12 Elements (**OPALX portion**) | 60–73 |
-| `LINE`, nested lines, `RING` | §15 Beam Lines | 112–114 |
-| `BEAM` parameters and species | §16 Beam Definitions (**OPALX portion**) | 115–118 |
-| `DISTRIBUTION`, sources and particle file formats | §17 Beam and Distributions (**OPALX portion**) | 120–130 |
-| Binning | §18 Structures | 144–146 |
-| Field solvers and boundaries | §19 Field Solvers (**OPALX portion**) | 147–156 |
-| Tracking and run semantics | §20 Tracking (**OPALX portion**) | 167–173 |
-| Supported field-map formats | Appendix A, §26 | 207–221 |
-| Language/element/command registries | §§43–45 | 413–419 |
-| Status, known limitations and regression guide | §§55, 58 | 448, 456 |
+| Missing information | Official online documentation |
+|---|---|
+| Complete maintained examples: drift, RF, emitted space charge | [worked input files](https://opalx-project.github.io/opalx-manual/getting-started/worked-inputs.html) |
+| Units, conventions | [conventions](https://opalx-project.github.io/opalx-manual/user-guide/conventions/index.html) |
+| Input language and execution order | [input language](https://opalx-project.github.io/opalx-manual/user-guide/input-language.html) |
+| Grammar, expressions, labels, arrays | [command format](https://opalx-project.github.io/opalx-manual/user-guide/command-format/index.html); [language syntax appendix](https://opalx-project.github.io/opalx-manual/user-guide/appendix/language-syntax/index.html) |
+| `TITLE`, variables, `CALL`, `QUIT` | [control statements](https://opalx-project.github.io/opalx-manual/user-guide/control-statements/index.html) |
+| Options, diagnostics and compatibility | [runtime options](https://opalx-project.github.io/opalx-manual/user-guide/options.html); [diagnostics and output](https://opalx-project.github.io/opalx-manual/user-guide/diagnostics-output.html) |
+| Physical elements, placement, detailed attributes | [elements](https://opalx-project.github.io/opalx-manual/user-guide/elements.html) (current OPALX interface) |
+| `LINE`, nested lines, `RING` | [beam lines](https://opalx-project.github.io/opalx-manual/user-guide/beam-lines/index.html) |
+| `BEAM` parameters and species | [beam definitions](https://opalx-project.github.io/opalx-manual/user-guide/beam.html) |
+| `DISTRIBUTION`, sources and particle file formats | [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html) |
+| Binning | [structures and binning](https://opalx-project.github.io/opalx-manual/user-guide/structures/index.html) |
+| Field solvers and boundaries | [field solvers](https://opalx-project.github.io/opalx-manual/user-guide/field-solver/index.html) |
+| Tracking and run semantics | [tracking](https://opalx-project.github.io/opalx-manual/user-guide/tracking.html) |
+| Supported field-map formats | [field-map formats](https://opalx-project.github.io/opalx-manual/user-guide/appendix/field-maps/index.html) |
+| Language/element/command registries | [command reference](https://opalx-project.github.io/opalx-manual/reference/commands.html); [element reference](https://opalx-project.github.io/opalx-manual/reference/elements.html) |
+| Status, known limitations and regression guide | [known limitations](https://opalx-project.github.io/opalx-manual/troubleshooting/known-limitations.html); [regression-test guide](https://opalx-project.github.io/opalx-manual/resources/regression-tests.html) |
 
 **Live official sources** (only if needed):
 
+- [The OPALX Universe](https://opalx-project.github.io/opalx-manual)
 - [OPALX manual source](https://github.com/OPALX-project/opalx-manual) — especially `user-guide/input-language.qmd`, `user-guide/elements.qmd`, `user-guide/beam.qmd`, `user-guide/beam-distributions.qmd`, `user-guide/field-solver/index.qmd`, `user-guide/tracking.qmd` and `getting-started/worked-inputs.qmd`.
 - [OPALX maintained regression inputs](https://github.com/OPALX-project/regression-tests-x) — working inputs and their required supporting files.
 - [OPALX implementation](https://github.com/OPALX-project/OPALX) — last resort for confirmed behavior or interface changes.

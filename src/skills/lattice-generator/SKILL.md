@@ -30,9 +30,13 @@ The skill accepts a natural-language description of an accelerator simulation, p
 - **Output location** — optional destination directory and name of the main OPALX input file.
 - **Supporting files** — optional existing distribution files, field maps, or other external data required by the simulation.
 
-Not all parameters must be explicitly provided. Use documented OPALX defaults when appropriate.
+Not all parameters must be explicitly provided. Before proceeding with
+input generation, handle missing or ambiguous information according to
+the "Handling incomplete simulation specifications" policy in Step 1.
 
-If essential information is missing and cannot be determined without making unsupported physical assumptions, request clarification from the user.
+Distinguish directly derivable parameters, documented technical defaults,
+underspecified physical parameters, and missing external dependencies.
+Do not silently introduce unsupported scientific assumptions.
 
 ## Outputs
 
@@ -63,9 +67,50 @@ Identify:
 6. Tracking parameters and stopping conditions.
 7. Requested diagnostics and output settings.
 
-Distinguish explicitly specified parameters from derived values and assumptions.
+#### Handling incomplete simulation specifications
 
-If the request is incomplete, use documented defaults where appropriate. Ask for clarification when a missing parameter is essential to defining the requested physical system.
+Before generating the OPALX input, identify missing or ambiguous
+parameters and classify them:
+
+1. **Directly derivable parameters:** If a parameter can be uniquely
+   determined from the supplied information using established physical
+   relationships or unit conversions, calculate it and document the
+   derivation.
+
+2. **Documented technical defaults:** Use documented OPALX defaults when
+   they are appropriate and do not introduce an unintended physical
+   assumption. Record relevant defaults in the generation summary.
+
+3. **Underspecified physical parameters:** Do not silently invent
+   quantities such as beam emittances, momentum spreads, phase-space
+   correlations, matching conditions, or unspecified lattice strengths.
+   Explain what is missing and why it matters.
+
+   When an accelerator-physics calculation could determine suitable
+   parameters, propose that approach to the user. Obtain authorization
+   before introducing additional physical assumptions, such as
+   periodic beam matching.
+
+   If a dedicated accelerator-physics skill is available, delegate
+   the required physics reasoning or design calculation to it.
+
+4. **Missing external dependencies:** Request required particle files,
+   field maps, or other physical input data when they cannot be
+   constructed from the supplied specification.
+
+If essential physical information remains unresolved, do not present
+an arbitrarily completed simulation input as the requested physical
+model. Request clarification before continuing.
+
+If the user explicitly authorizes autonomous physics-based design,
+the agent may proceed using justified calculations and clearly stated
+assumptions, preferably through a dedicated accelerator-physics skill.
+
+Document all derived parameters, assumptions, and user-authorized
+design choices in the generated input comments and generation summary.
+
+Do not perform input validation or simulation execution as part of
+this process.
 
 Do not introduce additional physical effects or lattice elements that the user did not request.
 
@@ -96,6 +141,7 @@ Use the official documentation to extend the information available in the local 
 
 Official sources:
 
+- [The OPALX Universe](https://opalx-project.github.io/opalx-manual)
 - [OPALX documentation repository](https://github.com/OPALX-project/opalx-manual)
 - [OPALX GitHub repository](https://github.com/OPALX-project/OPALX)
 - [OPALX regression tests](https://github.com/OPALX-project/regression-tests-x)
@@ -133,6 +179,59 @@ Follow these principles:
 - Include the OPALX statements necessary for the requested simulation configuration.
 - Use comments to clarify non-obvious parameters, unit conversions, or assumptions.
 - Prefer readable, organized input files over unnecessarily compact representations.
+
+#### Physical constants and derived parameters
+
+Prefer physically consistent, parameterized OPALX inputs over
+unnecessary hard-coded numerical approximations.
+
+Follow these principles:
+
+1. Use documented OPALX built-in physical constants, particle
+   properties, and predefined quantities whenever available.
+   Do not manually redefine or override these values unless
+   explicitly requested or scientifically justified.
+
+2. Express dependent physical parameters using documented OPALX
+   mathematical expressions and previously defined variables
+   whenever practical.
+
+3. Preserve numerical values explicitly specified by the user.
+   Do not replace them with approximate alternatives.
+
+4. Avoid hard-coding numerical approximations of quantities
+   that can be derived from existing parameters or constants.
+
+5.  When numerical physics calculations are necessary and cannot reasonably be expressed within OPALX, 
+    use appropriate computational     methods with sufficient numerical precision. Document the calculation, physical assumptions, and results. In future versions, delegate nontrivial accelerator-physics calculations to the dedicated accelerator-physics skill when available.
+
+6. Define independent parameters once and reuse them throughout
+   the input file to avoid inconsistencies.
+
+7. Only use built-in constants, variables, and expressions
+   confirmed to be supported by the current OPALX input language.
+
+The generated input should preserve the physical relationships
+between parameters and remain consistent when independent
+parameters are modified.
+
+#### Reproducibility and random seed management
+
+Generate reproducible simulation inputs whenever possible.
+
+1. If the user specifies a random seed, preserve that value.
+
+2. If no seed is specified, explicitly configure a fixed,
+   documented OPALX seed (e.g. `OPTION, SEED=123456789;`)
+   for simulations involving stochastic particle generation
+   or other random processes.
+
+3. Use varying or time-dependent seeds only when the user
+   requests independent random realizations. Record the
+   selected seed for each realization.
+
+4. Record the selected seed and relevant reproducibility
+   settings in the generation summary.
 
 Do not restrict input construction to a fixed template or predefined lattice topology.
 
@@ -201,7 +300,15 @@ The prepared simulation can subsequently be passed to the `lattice-validator` sk
 
 If input generation cannot be completed:
 
-1. **Missing parameters** — identify the essential information required and request clarification.
+1. **Missing or ambiguous parameters** — follow the missing-information
+   policy in Step 1:
+   - Derive parameters that are uniquely determined by the supplied inputs.
+   - Apply appropriate documented technical defaults.
+   - Request clarification for unresolved physical design choices.
+   - If an accelerator-physics skill is available, delegate physics
+     calculations or matching tasks when appropriate and authorized.
+   - Do not generate a supposedly complete physical model while
+     essential design parameters remain unresolved.
 2. **Unsupported OPALX feature** — explain which requested functionality is unsupported or cannot be confirmed from the available documentation.
 3. **Missing auxiliary files** — identify required external dependencies and request the necessary files.
 4. **Ambiguous syntax** — consult the official OPALX documentation and maintained regression examples. Do not guess unsupported syntax.
@@ -248,12 +355,12 @@ Generate an OPALX input for a beamline containing drifts, quadrupoles, and an RF
 
 ## Reference Documentation
 
-Primary reference:
-
-- **The OPALX Universe** — OPALX user guide, physics manual, and input language reference.
-
 Skill-specific reference:
 
 - `references/opalx-input-reference.md` — concise OPALX syntax guide and usage conventions.
 
 The reference documentation supports input generation but does not replace the official OPALX documentation for unfamiliar or evolving features.
+
+Primary external reference:
+
+- [**The OPALX Universe**](https://opalx-project.github.io/opalx-manual) — OPALX user guide, physics manual, and input language reference.

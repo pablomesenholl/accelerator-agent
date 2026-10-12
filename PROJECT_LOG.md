@@ -81,4 +81,8 @@ Project Log
 	Create a first version of the lattice generator skill
 9.10.26:
 	Create a first version of the reference for the lattice generator skill
-
+12.10.26:
+	Adjust opalx-input reference
+	Adjust lattice generator skill to include instructions for missing or ambiguous parameters
+	Adjust lattice generator skill to deal appropriately with Physical constants and derived parameters
+	Adjust lattice generator skill to deal appropriately with Reproducibility and random seed management
