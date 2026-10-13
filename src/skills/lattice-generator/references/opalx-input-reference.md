@@ -80,6 +80,7 @@ OPALX uses SI internally, but input **attributes mix SI, accelerator, and normal
 | `MULTIPOLET.TP` | physical coefficients: index 0 T, index 1 T/m, etc. |
 | `SOLENOID.KS` | normalized map scale, m⁻¹ |
 | `BEAM.PC` | reference momentum, GeV/c |
+| Global `REAL P0` | reference momentum for normalized magnetic-element strength conversion, GeV/c; independent of `BEAM.PC` |
 | `BEAM.ENERGY` | **total** particle energy, GeV (not kinetic energy) |
 | `BEAM.MASS` | rest mass, GeV/c² |
 | `BEAM.GAMMA` | dimensionless Lorentz factor |
@@ -100,6 +101,8 @@ REAL gamma=(Edes+EMASS)/EMASS;
 REAL beta=sqrt(1.0-1.0/(gamma*gamma));
 REAL P0=gamma*beta*EMASS;         // reference momentum [GeV/c]
 ```
+
+**Global `P0` and normalized magnetic strengths (current OPALX implementation):** `P0` is a special global `REAL` variable (default `1.0` GeV/c), not just an arbitrary name. OPALX uses it to convert normalized magnetic strengths into physical fields, including `QUADRUPOLE.K1/K1S`, `MULTIPOLE.KN/KS`, normalized `RBEND/SBEND` strengths, and `SOLENOID.KS`. Setting `BEAM.PC`, `BEAM.ENERGY`, or `BEAM.GAMMA` does **not** set global `P0`. For a single-design-momentum lattice specified with normalized magnetic strengths, define `REAL P0` from the intended reference momentum **before the magnetic elements** and keep the beam reference state consistent (e.g. `BEAM, PC=P0`). Do not rename `P0` to another variable such as `reference_pc`. For fixed-field, accelerating, or multi-energy configurations, use the momentum defining the **magnet-strength normalization**; global `P0` need not equal every particle's instantaneous momentum. Global `P0` is unrelated to the source offsets `P0X/P0Y/P0Z`. (Implementation: [global variable](https://github.com/OPALX-project/OPALX/blob/33d444649e3379b08c4610290d948fa2a4f39c93/src/AbstractObjects/OpalData.cpp), [quadrupole conversion](https://github.com/OPALX-project/OPALX/blob/33d444649e3379b08c4610290d948fa2a4f39c93/src/Elements/OpalQuadrupole.cpp).)
 
 For `FROMFILE` and `EMITTEDFROMFILE`, **omit all three reference-energy attributes**: files supply absolute normalized momenta. Bunch-charge magnitude is ordinarily positive; particle charge sign comes from `CHARGE` (or the selected `PARTICLE`). The manual's overview contains a negative-charge example, but the detailed current beam definition and maintained worked inputs use a positive `BCHARGE`; prefer that convention. (See [worked input files](https://opalx-project.github.io/opalx-manual/getting-started/worked-inputs.html), [beam definitions](https://opalx-project.github.io/opalx-manual/user-guide/beam.html) and [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html).)
 
@@ -142,6 +145,7 @@ M1: MULTIPOLE, L=0.2, ELEMEDGE=0.9, KN={0.0,0.54};
 ```
 
 - `K1` and `K1S`: normal and skew quadrupole strengths [m⁻²]. Do not substitute a gradient in T/m without applying the appropriate rigidity conversion.
+- **Normalized-strength dependency:** These `QUADRUPOLE` and `MULTIPOLE` examples rely on the global `REAL P0` defined in §4. Setting `BEAM.PC` alone does not establish the field-conversion momentum.
 - `MULTIPOLE.KN` and `KS` contain normalized normal/skew strengths; array indices 0 and 1 represent dipole and quadrupole. The current **particle** kernel does not implement all higher multipole orders even though the parser accepts larger arrays. For higher orders consider documented `MULTIPOLET` instead.
 - `QUADRUPOLE.DK1/DK1S` and `MULTIPOLE.DKN/DKS` are currently stored but not applied by the field kernel. Avoid treating them as effective error controls.
 

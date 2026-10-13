@@ -31,5 +31,5 @@ Use a tracking timestep of 1 × 10⁻¹¹ s, a maximum of 2,000 steps, a phase-s
 ### Task
 
 Generate the complete OPALX `.in` file and its simulation input directory. 
-
+Create the input directory in the same directory as this md file. 
 Return the generated input directory and the main input filename.
