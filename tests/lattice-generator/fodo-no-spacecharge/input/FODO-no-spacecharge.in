@@ -12,7 +12,9 @@ REAL n_particles=10000;
 REAL bunch_charge=1e-9;                  // C; 1 nC
 // PMASS is OPALX's built-in proton rest energy in GeV.
 // Total energy E=T+mc^2; reference momentum pc=sqrt(T*(T+2mc^2)).
-REAL reference_pc=sqrt(kinetic_energy*(kinetic_energy+2.0*PMASS));
+// Special global P0 sets normalized magnetic-strength conversion [GeV/c].
+// Define it before the quadrupoles and reuse it for the beam reference state.
+REAL P0=sqrt(kinetic_energy*(kinetic_energy+2.0*PMASS));
 
 // Geometry: QF [0,0.5], D1 [0.5,1], QD [1,1.5], D2 [1.5,2] m.
 REAL quad_length=0.5;
@@ -51,7 +53,7 @@ InitialSource: EMISSIONSOURCE, DISTRIBUTION=InitialDistribution,
 InitialSources: EMISSIONSOURCELIST=(InitialSource);
 
 ProtonBeam: BEAM, PARTICLE=PROTON, CHARGE=1,
-    PC=reference_pc, NALLOC=n_particles, BCHARGE=bunch_charge,
+    PC=P0, NALLOC=n_particles, BCHARGE=bunch_charge,
     SOURCES=InitialSources;
 
 // TYPE=NONE disables space charge. The documented technical mesh settings

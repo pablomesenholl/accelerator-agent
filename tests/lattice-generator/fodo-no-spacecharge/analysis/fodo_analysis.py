@@ -94,10 +94,21 @@ def parse_fodo_parameters(input_path: Path | None) -> dict[str, float]:
         return defaults
 
     text = input_path.read_text(errors="replace")
-    return {
-        name: parse_real_literal(text, name, default)
+    aliases = {"LQ": "quad_length", "LD": "drift_length", "k1": "quad_strength"}
+    params = {
+        name: parse_real_literal(
+            text, aliases.get(name, name), parse_real_literal(text, name, default)
+        )
         for name, default in defaults.items()
     }
+    for plane in ("x", "y"):
+        match = re.search(
+            rf"\bSIGMA{plane}\s*=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?)\s*[,;]",
+            text, flags=re.IGNORECASE,
+        )
+        if match:
+            params[f"sigma_{plane}"] = float(match.group(1))
+    return params
 
 
 def parse_lattice_lengths(input_path: Path | None) -> tuple[float, float]:

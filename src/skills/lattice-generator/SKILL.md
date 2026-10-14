@@ -175,6 +175,13 @@ Follow these principles:
 - Use descriptive names for elements and beamlines.
 - Preserve the requested lattice geometry and element order.
 - Respect documented OPALX unit conventions.
+- For normalized magnetic-element strengths, explicitly define OPALX's special global
+  `REAL P0` (GeV/c) **before the affected magnetic elements**, using the momentum
+  that defines their strength normalization. `BEAM.PC`, `BEAM.ENERGY`, and
+  `BEAM.GAMMA` do not set global `P0`; do not replace its name with an ordinary
+  variable. For a single-design-momentum lattice, keep `P0` consistent with
+  the beam reference momentum; for fixed-field or multi-energy setups,
+  distinguish the two where appropriate (see `references/opalx-input-reference.md`, §4).
 - Use documented expressions and parameter relationships when deriving quantities.
 - Include the OPALX statements necessary for the requested simulation configuration.
 - Use comments to clarify non-obvious parameters, unit conversions, or assumptions.
