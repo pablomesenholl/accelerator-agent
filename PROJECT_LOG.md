@@ -98,3 +98,7 @@ Project Log
 15.10.26:
 	First version of the lattice validator skill
 	Fork OPALX and create parser branch
+16.10.26:
+	Vibecode a parse-only feature for OPALX: works on my fork for local serial build and FODO-no-spacecharge.in
+	Tested lattice validator skill on fodo example (no 1st layer): works, but for some reason copies existing input from lattice generator test
+	 

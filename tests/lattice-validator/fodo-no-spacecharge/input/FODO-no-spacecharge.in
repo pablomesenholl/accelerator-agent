@@ -1,0 +1,70 @@
+TITLE, STRING="Single FODO cell: 250 MeV protons without space charge";
+
+OPTION, VERSION=10900;
+OPTION, SEED=123456789;
+OPTION, PSDUMPFREQ=100, STATDUMPFREQ=1;
+OPTION, ENABLEHDF5=TRUE;
+OPTION, AUTOPHASE=0;
+
+// Independent beam parameters. Energy inputs use GeV.
+REAL kinetic_energy=0.250;
+REAL n_particles=10000;
+REAL bunch_charge=1e-9;                  // C; 1 nC
+// PMASS is OPALX's built-in proton rest energy in GeV.
+// Total energy E=T+mc^2; reference momentum pc=sqrt(T*(T+2mc^2)).
+// Special global P0 sets normalized magnetic-strength conversion [GeV/c].
+// Define it before the quadrupoles and reuse it for the beam reference state.
+REAL P0=sqrt(kinetic_energy*(kinetic_energy+2.0*PMASS));
+
+// Geometry: QF [0,0.5], D1 [0.5,1], QD [1,1.5], D2 [1.5,2] m.
+REAL quad_length=0.5;
+REAL drift_length=0.5;
+REAL quad_strength=1.5;                 // normalized K1 [m^-2]
+REAL cell_length=2.0*(quad_length+drift_length);
+
+QF: QUADRUPOLE, L=quad_length, ELEMEDGE=0.0, K1=quad_strength;
+D1: DRIFT, L=drift_length, ELEMEDGE=quad_length;
+QD: QUADRUPOLE, L=quad_length,
+    ELEMEDGE=quad_length+drift_length, K1=-quad_strength;
+D2: DRIFT, L=drift_length, ELEMEDGE=2.0*quad_length+drift_length;
+FODOcell: LINE=(QF,D1,QD,D2);
+
+// Supplied six-dimensional Gaussian parameters are preserved exactly.
+// Spatial RMS widths [m]; momentum RMS widths in p/(mc).
+// CORR upper triangle for (x,px,y,py,z,pz):
+// (x,px),(x,y),(x,py),(x,z),(x,pz),
+// (px,y),(px,py),(px,z),(px,pz),
+// (y,py),(y,z),(y,pz),(py,z),(py,pz),(z,pz).
+InitialDistribution: DISTRIBUTION, TYPE=MULTIVARIATEGAUSS,
+    NPARTDIST=n_particles,
+    SIGMAX=1e-3, SIGMAY=1e-3, SIGMAZ=5e-3,
+    SIGMAPX=3.48922e-4, SIGMAPY=4.23738e-4, SIGMAPZ=1e-5,
+    CORR={0.829278,0,0,0,0,
+          0,0,0,0,
+          -0.734451,0,0,
+          0,0,0};
+
+// One-shot injection at t=0, centered at the cell entrance.
+// Source offsets are zero; the generated beam supplies reference momentum.
+InitialSource: EMISSIONSOURCE, DISTRIBUTION=InitialDistribution,
+    EMISSIONMODEL=NONE, T0=0.0,
+    R0X=0.0, R0Y=0.0, R0Z=0.0,
+    P0X=0.0, P0Y=0.0, P0Z=0.0;
+InitialSources: EMISSIONSOURCELIST=(InitialSource);
+
+ProtonBeam: BEAM, PARTICLE=PROTON, CHARGE=1,
+    PC=P0, NALLOC=n_particles, BCHARGE=bunch_charge,
+    SOURCES=InitialSources;
+
+// TYPE=NONE disables space charge. The documented technical mesh settings
+// remain required by the solver constructor, even with self-fields disabled.
+NoSpaceCharge: FIELDSOLVER, TYPE=NONE,
+    NX=8, NY=8, NZ=8,
+    PARFFTX=TRUE, PARFFTY=TRUE, PARFFTZ=TRUE,
+    BCFFTX=OPEN, BCFFTY=OPEN, BCFFTZ=OPEN;
+
+TRACK, LINE=FODOcell, BEAM=ProtonBeam, ZSTART=0.0,
+    DT={1e-11}, MAXSTEPS={2000}, ZSTOP={cell_length};
+    RUN, METHOD=PARALLEL, FIELDSOLVER=NoSpaceCharge;
+ENDTRACK;
+QUIT;
