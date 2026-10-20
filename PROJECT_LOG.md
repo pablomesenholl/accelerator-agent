@@ -1,49 +1,49 @@
 Project Log
 
 17.09.26: 
-	create PROJECT_LOG.md
-	initialize git repo for the semester project
-	set up ColliderAgent up to Magnus
-	set up a generic .gitignore
+	-create PROJECT_LOG.md
+	-initialize git repo for the semester project
+	-set up ColliderAgent up to Magnus
+	-set up a generic .gitignore
 21.09.26:
-	set up a serial build for OPALX
-	include unit tests in OPALX
-	run a minimal-drift example successfully
-	read and work through https://opalx-project.github.io/opalx-manual/getting-started/worked-inputs.html
-	start to analyse test sim input and output files
+	-set up a serial build for OPALX
+	-include unit tests in OPALX
+	-run a minimal-drift example successfully
+	-read and work through https://opalx-project.github.io/opalx-manual/getting-started/	worked-inputs.html
+	-start to analyse test sim input and output files
 22.09.26:
-	analysed minimal-drift example input and output
-	small test plotting of statistics
+	-analysed minimal-drift example input and output
+	-small test plotting of statistics
 23.09.26:
-	FODO no spacecharge working directory
-	FODO no spacecharge start on input file
-	OPALX MAD style input file template created	
+	-FODO no spacecharge working directory
+	-FODO no spacecharge start on input file
+	-OPALX MAD style input file template created	
 24.09.26: 
-	First FODO no spacecharge input file works
-	Params for distr for FODO input can be improved
-	Learn about accelerator physics and FODO cell
+	-First FODO no spacecharge input file works
+	-Params for distr for FODO input can be improved
+	-Learn about accelerator physics and FODO cell
 25.09.26:
-	Do the math to match momentum width to space width of fodo cell
-	Run improved FODO cell
-	Create python analysis script to plot: envelopes, emittance, corr and phase space snapshots
+	-Do the math to match momentum width to space width of fodo cell
+	-Run improved FODO cell
+	-Create python analysis script to plot: envelopes, emittance, corr and phase space snapshots
 26.09.26:
-	Inspect plots of 1cell FODO simulations
-	Create directories for 10 & 100 fodo periods
+	-Inspect plots of 1cell FODO simulations
+	-Create directories for 10 & 100 fodo periods
 28.09.26:
-	Plot analytic behaviour of FODO next to OPLAX 
-	Adjust input file to work for 10cell fodo case, including a lattice generator
-	Postprocess and plot 10cell fodo with analytic behaviour of OPALX initial values
+	-Plot analytic behaviour of FODO next to OPLAX 
+	-Adjust input file to work for 10cell fodo case, including a lattice generator
+	-Postprocess and plot 10cell fodo with analytic behaviour of OPALX initial values
 29.09.26:
-	Install Docker
-	Install other dependencies for magnus
-	Install magnus locally and make it work
+	-Install Docker
+	-Install other dependencies for magnus
+	-Install magnus locally and make it work
 30.09.26:
-	Do a ColliderAgent specific run manually on Magnus for MadGraph-compiler only:
+	-Do a ColliderAgent specific run manually on Magnus for MadGraph-compiler only:
 		magnus run madgraph-compile --\
 			--model sm\
 			--process "pp > e+e-"\
 			--output smoke_test/dy
-	Found 2 bugs of magnus with WSL and Docker desktop windows setup:
+	-Found 2 bugs of magnus with WSL and Docker desktop windows setup:
 		1. MG5 3.7.0 auto-update shutdown bug
 		   → fixed with `set auto_update 0`
 
@@ -101,4 +101,12 @@ Project Log
 16.10.26:
 	Vibecode a parse-only feature for OPALX: works on my fork for local serial build and FODO-no-spacecharge.in
 	Tested lattice validator skill on fodo example (no 1st layer): works, but for some reason copies existing input from lattice generator test
-	 
+19.10.26: 
+	learn about AI models, opensource models and create a first architecture and roadmap
+	create the first architecture for python-agent
+20.10.26:
+	install ollama and run first model locally
+	create first version of file_tools for python-agent including tests: works
+	create first version of skills_tools for python-agent inlcuding tests: model times out, failes
+	Learn about Euler and set up the account
+	

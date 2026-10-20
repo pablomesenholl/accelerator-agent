@@ -19,10 +19,9 @@ of reusable skills, Magnus blueprints, and execution scripts.
   assumptions, and use the local OPALX reference before consulting official
   documentation for missing or ambiguous features.
 - Use `tests/` for development examples and checks, and `output/` for generated
-  run results. Run checks appropriate to the change; describe what was checked
-  and any limitations. Do not launch simulations merely for a documentation edit.
+  run results. Run checks appropriate to the change, if asked for in developement; describe what was checked and any limitations. Do not launch simulations merely for a documentation edit.
 - Local blueprint edits do not update Magnus automatically. When execution
   requires a blueprint change, inspect the registered version and register the
-  intended update explicitly; otherwise reuse the existing blueprint.
+  intended update explicitly, but ask for permission by the developer; otherwise reuse the existing blueprint.
 - Preserve unrelated local changes and avoid committing generated outputs or
   changing dependencies unless the task calls for it.
