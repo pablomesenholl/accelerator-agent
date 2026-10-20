@@ -47,9 +47,16 @@
   unverified; offline instruction and reference retrieval checks pass.
 - A separate FODO smoke harness uses only the existing benchmark prompt and
   preserves inputs, tool-access traces, and a report under `output/python-agent/`.
-  The long FODO run is deferred until after the simple smoke test, as requested;
-  successful complete lattice generation has not yet been established.
+  The user's FODO run retrieved instructions and reference pages but timed out
+  on a model request after 600 s (about 34 minutes total); no `.in` file was
+  generated. Its report is in `output/python-agent/fodo-20261020T160305898794Z/`.
+  Successful complete lattice generation has not yet been established.
 - Step 3 has not started. Some configuration, error handling, and test basics
   exist, but the broader step 4 remains future work. Thinking remains off by
   default; response/context limits are configurable for documentation and inputs.
 - Use this roadmap to track progress across development sessions.
+- Follow-up: shared readable stderr progress in `agent.py` shows model waiting
+  times, tool calls/results, and errors, with a 30-second heartbeat and `--quiet`.
+  Offline ADK tests cover callbacks, output summaries, quiet mode, and cleanup;
+  no extra Ollama requests were made while the user's FODO run was active.
+  Sixteen offline checks passed; the live Ollama test was not rerun for this change.

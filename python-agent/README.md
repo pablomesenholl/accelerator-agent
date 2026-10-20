@@ -174,3 +174,33 @@ These tool boundaries are application-level checks, not an OS sandbox. Use a
 private workspace without concurrent external writers that could race path checks.
 Python/library caches use their normal locations; the workspace boundary governs
 agent tools and optional trace output.
+
+## Readable terminal progress
+
+New runs print progress to stderr by default, independently of optional JSONL
+tracing. This is shared by the CLI and smoke tests through `run_task`:
+
+```text
+[   0.1s] Model request 1: waiting for response...
+[  30.1s] Still waiting for model response 1 (30s)
+[  42.3s] Model response 1 received (42.2s)
+[  42.3s] Calling list_skills()
+[  42.4s] OK list_skills (4 skills)
+```
+
+The display shows model request durations, a waiting heartbeat every 30 seconds,
+tool names, selected path/search arguments, returned line ranges, and tool errors.
+It summarizes documents and generated files without printing their contents.
+It does not stream tokens, reveal internal reasoning, or indicate a percentage
+complete. A waiting heartbeat only indicates that a model response is pending;
+it cannot prove that inference is advancing.
+
+The final CLI response stays on stdout. Hide progress with:
+
+```bash
+.venv/bin/python python-agent/agent.py --quiet 'List the available skills.'
+```
+
+Python callers can use `run_task(..., progress=False)`. The existing trace format
+and trace option are unchanged. Already-running processes keep their original
+behavior; no restart is needed to let an existing FODO run finish.

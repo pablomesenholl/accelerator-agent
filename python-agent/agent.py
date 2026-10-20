@@ -5,6 +5,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 import sys
+import time
 
 from google.adk.agents import LlmAgent
 from google.adk.runners import InMemoryRunner
@@ -24,8 +25,83 @@ class TaskResult:
     tool_requests: list[dict] = field(default_factory=list)
 
 
+class _Progress:
+    """Concise terminal status; never print prompts, file contents, or reasoning."""
+
+    def __init__(self, enabled: bool):
+        self.enabled = enabled
+        self.started = time.monotonic()
+        self.waiting_since = None
+        self.model_calls = 0
+
+    @staticmethod
+    def short(value) -> str:
+        return " ".join(str(value).split())[:180]
+
+    def show(self, message: str):
+        if self.enabled:
+            elapsed = time.monotonic() - self.started
+            print(f"[{elapsed:6.1f}s] {message}", file=sys.stderr, flush=True)
+
+    def before_model(self, callback_context, llm_request):
+        self.model_calls += 1
+        self.waiting_since = time.monotonic()
+        self.show(f"Model request {self.model_calls}: waiting for response...")
+
+    def after_model(self, callback_context, llm_response):
+        if self.waiting_since is not None:
+            duration = time.monotonic() - self.waiting_since
+            self.show(f"Model response {self.model_calls} received ({duration:.1f}s)")
+            self.waiting_since = None
+
+    async def heartbeat(self):
+        while True:
+            await asyncio.sleep(30)
+            if self.waiting_since is not None:
+                elapsed = time.monotonic() - self.waiting_since
+                self.show(f"Still waiting for model response {self.model_calls} ({elapsed:.0f}s)")
+
+    def record(self, kind: str, data: dict):
+        if kind == "start":
+            self.show(f"Starting task with {self.short(data['model'])}")
+        elif kind == "tool_call":
+            args = data["args"]
+            details = ", ".join(f"{key}={self.short(args[key])}" for key in
+                                ("skill", "document", "path", "query", "start_line", "line_count")
+                                if key in args)
+            self.show(f"Calling {data['name']}({details})")
+        elif kind == "tool_result":
+            result = data["response"]
+            if "error" in result:
+                self.show(f"FAILED {data['name']}: {self.short(result['error'])}")
+                return
+            details = []
+            for key in ("skill", "document", "written", "edited"):
+                if key in result:
+                    details.append(f"{key}={self.short(result[key])}")
+            for key in ("skills", "entries", "matches"):
+                if key in result:
+                    details.append(f"{len(result[key])} {key}")
+            if "content" in result:
+                count = len(result["content"].splitlines())
+                if "start_line" in result and count:
+                    start = result["start_line"]
+                    details.append(f"lines {start}-{start + count - 1}")
+                else:
+                    details.append(f"{count} lines retrieved")
+            if result.get("next_line") is not None:
+                details.append(f"next_line={result['next_line']}")
+            suffix = f" ({'; '.join(details)})" if details else ""
+            self.show(f"OK {data['name']}{suffix}")
+        elif kind == "final":
+            self.show("Agent finished.")
+        elif kind == "error":
+            self.show(f"Agent stopped: {self.short(data['message'])}")
+
+
 async def run_task(task: str, workspace: Path, max_calls: int = 8,
-                   trace: str | None = None) -> TaskResult:
+                   trace: str | None = None, progress: bool = True) -> TaskResult:
+    display = _Progress(progress)
     library = SkillLibrary()
     files = WorkspaceFiles(workspace, read_only_roots=(library.root,))
     trace_file = files._path(trace) if trace else None
@@ -33,6 +109,7 @@ async def run_task(task: str, workspace: Path, max_calls: int = 8,
         trace_file.parent.mkdir(parents=True, exist_ok=True)
 
     def record(kind: str, data: dict):
+        display.record(kind, data)
         if trace_file:
             with trace_file.open("a", encoding="utf-8") as stream:
                 stream.write(json.dumps({"event": kind, **data}, ensure_ascii=False) + "\n")
@@ -43,11 +120,17 @@ async def run_task(task: str, workspace: Path, max_calls: int = 8,
         instruction=(Path(__file__).parent / "prompts" / "sytem.md").read_text(),
         tools=[files.read_file, files.write_file, files.edit_file, files.list_files,
                library.list_skills, library.load_skill, library.read_skill_document],
+        before_model_callback=display.before_model if progress else None,
+        after_model_callback=display.after_model if progress else None,
     )
     runner = InMemoryRunner(agent=agent, app_name="accelerator_agent")
     result = TaskResult()
+    heartbeat = None
     try:
         record("start", {"task": task, "model": str(agent.model.model), "max_calls": max_calls})
+        display.show(f"Workspace: {files.root}")
+        if progress:
+            heartbeat = asyncio.create_task(display.heartbeat())
         session = await runner.session_service.create_session(
             app_name="accelerator_agent", user_id="local"
         )
@@ -80,6 +163,9 @@ async def run_task(task: str, workspace: Path, max_calls: int = 8,
         record("error", {"type": type(exc).__name__, "message": str(exc)})
         raise
     finally:
+        if heartbeat is not None:
+            heartbeat.cancel()
+            await asyncio.gather(heartbeat, return_exceptions=True)
         await runner.close()
 
 
@@ -90,6 +176,7 @@ def main() -> int:
     parser.add_argument("--workspace", type=Path, default=Path("output/python-agent"))
     parser.add_argument("--max-calls", type=int, default=8)
     parser.add_argument("--trace", help="Append JSONL tool calls/results to a workspace-relative file")
+    parser.add_argument("--quiet", action="store_true", help="Hide progress messages on stderr")
     args = parser.parse_args()
     if args.max_calls < 1:
         parser.error("--max-calls must be positive")
@@ -97,7 +184,8 @@ def main() -> int:
         parser.error("Provide exactly one task or --task-file")
     try:
         task = args.task_file.read_text(encoding="utf-8") if args.task_file else args.task
-        result = asyncio.run(run_task(task, args.workspace, args.max_calls, args.trace))
+        result = asyncio.run(run_task(task, args.workspace, args.max_calls, args.trace,
+                                     progress=not args.quiet))
     except (Exception, KeyboardInterrupt) as exc:
         print(f"Agent failed: {exc}", file=sys.stderr)
         return 1
