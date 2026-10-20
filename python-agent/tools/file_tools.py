@@ -3,8 +3,11 @@ from pathlib import Path
 
 
 class WorkspaceFiles:
-    def __init__(self, workspace: Path):
+    def __init__(self, workspace: Path, read_only_roots: tuple[Path, ...] = ()):
         self.root = workspace.expanduser().resolve()
+        self.read_only_roots = tuple(path.resolve() for path in read_only_roots)
+        if any(self.root.is_relative_to(root) for root in self.read_only_roots):
+            raise ValueError("Workspace must be outside the read-only skills directory")
         self.root.mkdir(parents=True, exist_ok=True)
 
     def _path(self, path: str) -> Path:
@@ -19,6 +22,8 @@ class WorkspaceFiles:
                 raise ValueError("Symbolic links are not allowed")
         if not target.resolve().is_relative_to(self.root):
             raise ValueError("Path escapes workspace")
+        if any(target.resolve().is_relative_to(root) for root in self.read_only_roots):
+            raise ValueError("Skill files are read-only; use the skill documentation tools")
         if target.is_file() and target.stat().st_nlink > 1:
             raise ValueError("Hard-linked files are not allowed")
         return target

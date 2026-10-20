@@ -44,13 +44,14 @@ and data are shared across Python environments.
 
 ## Standalone Python agent
 
-Phase 1 provides a local Google ADK + LiteLLM CLI using Ollama Qwen3.5 4B,
-with file tools restricted to a dedicated workspace:
+The standalone Google ADK + LiteLLM CLI uses local Ollama Qwen3.5 4B,
+with workspace-confined file tools and read-only discovery of `src/skills/`:
 
 ```bash
 uv sync --locked
 .venv/bin/python python-agent/agent.py 'Create notes.txt describing a FODO cell.'
 ```
 
-See [python-agent/README.md](python-agent/README.md) for configuration and the
-live tool-calling smoke test. Skills and Magnus are not integrated in this phase.
+See [python-agent/README.md](python-agent/README.md) for progressive skill loading,
+configuration, and the discovery and FODO generation smoke tests. Magnus and
+simulation execution are not integrated yet.

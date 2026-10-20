@@ -10,7 +10,8 @@ def create_model() -> LiteLlm:
         api_base=os.getenv("OLLAMA_API_BASE", "http://localhost:11434"),
         temperature=0,
         timeout=float(os.getenv("ACCELERATOR_AGENT_TIMEOUT", "300")),
-        max_tokens=512,
+        max_tokens=int(os.getenv("ACCELERATOR_AGENT_MAX_TOKENS", "2048")),
+        num_ctx=int(os.getenv("ACCELERATOR_AGENT_CONTEXT", "16384")),
         num_retries=0,
-        reasoning_effort="none",
+        reasoning_effort=os.getenv("ACCELERATOR_AGENT_REASONING", "none"),
     )
