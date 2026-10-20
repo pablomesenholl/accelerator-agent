@@ -41,3 +41,16 @@ This local override is not part of the reproducible environment. After applying
 it, use the activated environment's `python` and `magnus` commands directly;
 `uv sync --locked` restores the locked SDK release. The backend configuration
 and data are shared across Python environments.
+
+## Standalone Python agent
+
+Phase 1 provides a local Google ADK + LiteLLM CLI using Ollama Qwen3.5 4B,
+with file tools restricted to a dedicated workspace:
+
+```bash
+uv sync --locked
+.venv/bin/python python-agent/agent.py 'Create notes.txt describing a FODO cell.'
+```
+
+See [python-agent/README.md](python-agent/README.md) for configuration and the
+live tool-calling smoke test. Skills and Magnus are not integrated in this phase.

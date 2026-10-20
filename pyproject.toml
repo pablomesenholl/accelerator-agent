@@ -10,6 +10,9 @@ dependencies = [
     "pandas",
     "matplotlib",
     "h5py",
+    "google-adk>=1.0,<2",
+    # ADK 1.39.1 compatibility range; see python-agent/README.md.
+    "litellm>=1.83.7,<=1.83.14",
 ]
 
 [tool.uv]
