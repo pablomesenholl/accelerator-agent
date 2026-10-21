@@ -7,7 +7,7 @@
 - smaller Qwen3 models, especially 0.6B, 4B, 8B, and 14B;
 - one or two coder models, such as Qwen2.5-Coder 7B/14B or Qwen3-Coder-30B-A3B;
 - Gemma 3 models as another comparison family
-- current existing local model (ollama): qwen3.5:4b-q4_K_M
+- current existing local model (ollama): qwen3.5:2b
 
 ## Infrastructure to run models
 
@@ -51,7 +51,29 @@
   on a model request after 600 s (about 34 minutes total); no `.in` file was
   generated. Its report is in `output/python-agent/fodo-20261020T160305898794Z/`.
   Successful complete lattice generation has not yet been established.
-- Step 3 has not started. Some configuration, error handling, and test basics
+- Step 3 now has an opt-in Magnus adapter and direct CLI, with nonblocking
+  submission, durable job IDs, bounded status/log queries, and controlled output
+  retrieval. Submission requires an operator-supplied matching PASS report.
+  Existing skills, blueprints, execution scripts, and dependencies are unchanged.
+  37 offline tests passed; the live Qwen test was skipped. The registered blueprint
+  schema was checked through the new adapter and is compatible. A real non-LLM
+  integration smoke test then passed in about 39 s (job `bab44fba338aa7d6`):
+  upload/submission, reconnect/deduplication, status/logs, OPALX execution (code 0),
+  controlled download, and readable statistics/HDF5 outputs all completed.
+  Artifacts: `output/python-agent/magnus-smoke-20261021T174437370282Z/`.
+  Backend integration is verified. The Qwen 2B execution attempt then failed after
+  490 s: both execution skills loaded, but the model alternated validation-file
+  reads and input listings and never invoked a backend tool or submitted a job.
+  Report: `output/python-agent/qwen-execution-20261021T175348993433Z/qwen-report.json`.
+  The focused Phase 3 suite now has 15 passing offline tests, including actual ADK
+  tool exposure/execution with a fake backend and scripted model. Reliable Qwen
+  execution remains unverified; native parser-only validation remains skipped.
+  Follow-up: short repeating inspection cycles now stop early, and a system
+  handoff exposes preloaded operator approval/input paths and the backend sequence.
+  Submission gates are unchanged. Thirty focused offline checks passed; Qwen was
+  not rerun, so model-driven execution remains the next manual verification.
+  See `python-agent/MAGNUS.md` for usage and remaining limits.
+- Some configuration, error handling, and test basics
   exist, but the broader step 4 remains future work. Thinking remains off by
   default; response/context limits are configurable for documentation and inputs.
 - Use this roadmap to track progress across development sessions.
@@ -71,3 +93,6 @@
   Offline ADK tests cover callbacks, output summaries, quiet mode, and cleanup;
   no extra Ollama requests were made while the user's FODO run was active.
   Sixteen offline checks passed; the live Ollama test was not rerun for this change.
+- FODO smoke timeout now defaults to 1,200 seconds per model request, with explicit
+  environment overrides preserved. This timeout-only adjustment has not been
+  verified through another live FODO run.

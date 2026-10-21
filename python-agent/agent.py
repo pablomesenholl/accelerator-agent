@@ -16,6 +16,7 @@ from google.genai import types
 from model_config import create_model
 from tools.file_tools import WorkspaceFiles
 from tools.skill_tools import SkillLibrary
+from tools.magnus_tools import JOB_DIRECTORY, MagnusTools
 
 
 @dataclass
@@ -36,8 +37,14 @@ class _ToolLoopGuard:
         self.limit = limit
         self.previous = None
         self.count = 0
+        self.history = []
 
     def before_tool(self, tool, args, tool_context):
+        if tool.name in {'get_opalx_job_status', 'read_opalx_job_logs'}:
+            # Bounded read-only polling is legitimate; never exempt submission.
+            self.previous, self.count = None, 0
+            self.history.clear()
+            return
         normalized = args
         if hasattr(tool, "func"):
             try:
@@ -49,12 +56,47 @@ class _ToolLoopGuard:
         signature = json.dumps([tool.name, normalized], sort_keys=True, default=str)
         self.count = self.count + 1 if signature == self.previous else 1
         self.previous = signature
+        self.history.append(signature)
+        self.history = self.history[-3 * self.limit:]
         if self.count >= self.limit:
             raise RepeatedToolCallError(
                 f"Stopped before executing {tool.name}: {self.count} consecutive identical "
                 "tool calls. Reuse previous results or change the retrieval query/range. "
                 "Inspect the trace before retrying."
             )
+        for period in (2, 3):
+            if len(self.history) >= period * self.limit:
+                recent = self.history[-period * self.limit:]
+                if recent == recent[:period] * self.limit:
+                    raise RepeatedToolCallError(
+                        f"Stopped before executing {tool.name}: a {period}-call pattern "
+                        f"repeated {self.limit} times. Reuse previous results and advance "
+                        "the workflow. Inspect the trace before retrying."
+                    )
+
+
+def _execution_handoff(magnus: MagnusTools) -> str:
+    """Expose operator configuration already snapshotted by the submission gate."""
+    approval = magnus.approval or {}
+    configuration = {
+        'submission_enabled': magnus.allow_simulation,
+        'report_status': approval.get('status'),
+        **{key: approval.get(key) for key in ('simulation', 'input_file', 'input_digest')},
+    }
+    return (
+        '\n\nExecution handoff (operator configuration):\n'
+        + json.dumps(configuration, ensure_ascii=False)
+        + '\nThe report is already preloaded by the adapter. Repeated file reads or '
+        'directory listings do not authorize execution. If execution is requested, '
+        'submission is enabled, and report_status is PASS: consult opalx-simulator '
+        'and magnus once, then call inspect_opalx_backend. If compatible, call '
+        'submit_opalx_simulation with the exact simulation and input_file above. '
+        'The tool must still verify all report checks and the current input digest; '
+        'this handoff does not validate inputs or bypass that gate. Otherwise report '
+        'the missing approval and do not submit. Keep the returned job ID, inspect '
+        'status/logs, and retrieve outputs when complete. Stop on gate errors and '
+        'report them; do not edit the input or approval to bypass them.'
+    )
 
 
 class _Progress:
@@ -99,7 +141,8 @@ class _Progress:
         elif kind == "tool_call":
             args = data["args"]
             details = ", ".join(f"{key}={self.short(args[key])}" for key in
-                                ("skill", "document", "path", "query", "start_line", "line_count")
+                                ("skill", "document", "path", "query", "start_line", "line_count",
+                                 "simulation", "input_file", "job_id", "page")
                                 if key in args)
             self.show(f"Calling {data['name']}({details})")
         elif kind == "tool_result":
@@ -108,7 +151,7 @@ class _Progress:
                 self.show(f"FAILED {data['name']}: {self.short(result['error'])}")
                 return
             details = []
-            for key in ("skill", "document", "written", "edited"):
+            for key in ("skill", "document", "written", "edited", "job_id", "status", "output_path"):
                 if key in result:
                     details.append(f"{key}={self.short(result[key])}")
             for key in ("skills", "entries", "matches"):
@@ -141,10 +184,24 @@ class _Progress:
 
 
 async def run_task(task: str, workspace: Path, max_calls: int = 8,
-                   trace: str | None = None, progress: bool = True) -> TaskResult:
+                   trace: str | None = None, progress: bool = True,
+                   enable_magnus: bool = False, allow_simulation: bool = False,
+                   validation_report: str | None = None) -> TaskResult:
+    if allow_simulation and (not enable_magnus or not validation_report):
+        raise ValueError('Simulation requires enable_magnus and validation_report')
     display = _Progress(progress)
     library = SkillLibrary()
-    files = WorkspaceFiles(workspace, read_only_roots=(library.root,))
+    files = WorkspaceFiles(workspace, read_only_roots=(library.root,
+                           workspace.expanduser().resolve() / JOB_DIRECTORY))
+    tools = [files.read_file, files.write_file, files.edit_file, files.list_files,
+             library.list_skills, library.load_skill, library.read_skill_document]
+    instruction = (Path(__file__).parent / "prompts" / "sytem.md").read_text()
+    if enable_magnus:
+        magnus = MagnusTools(files.root, allow_simulation, validation_report)
+        instruction += _execution_handoff(magnus)
+        tools.extend([magnus.inspect_opalx_backend, magnus.inspect_simulation_input,
+                      magnus.submit_opalx_simulation, magnus.get_opalx_job_status,
+                      magnus.read_opalx_job_logs, magnus.retrieve_opalx_outputs])
     trace_file = files._path(trace) if trace else None
     if trace_file:
         trace_file.parent.mkdir(parents=True, exist_ok=True)
@@ -178,9 +235,10 @@ async def run_task(task: str, workspace: Path, max_calls: int = 8,
     agent = LlmAgent(
         name="accelerator_agent",
         model=create_model(),
-        instruction=(Path(__file__).parent / "prompts" / "sytem.md").read_text(),
-        tools=[files.read_file, files.write_file, files.edit_file, files.list_files,
-               library.list_skills, library.load_skill, library.read_skill_document],
+        # A provider preserves literal braces in operator paths/JSON: ADK must
+        # not interpret them as session-state placeholders.
+        instruction=lambda ctx: instruction,
+        tools=tools,
         before_model_callback=display.before_model,
         after_model_callback=after_model,
         before_tool_callback=guard.before_tool,
@@ -238,15 +296,22 @@ def main() -> int:
     parser.add_argument("--max-calls", type=int, default=8)
     parser.add_argument("--trace", help="Append JSONL tool calls/results to a workspace-relative file")
     parser.add_argument("--quiet", action="store_true", help="Hide progress messages on stderr")
+    parser.add_argument('--enable-magnus', action='store_true', help='Expose Magnus tools')
+    parser.add_argument('--allow-simulation', action='store_true', help='Allow reviewed input submission')
+    parser.add_argument('--validation-report', help='Operator PASS report, relative to workspace')
     args = parser.parse_args()
     if args.max_calls < 1:
         parser.error("--max-calls must be positive")
     if bool(args.task) == bool(args.task_file):
         parser.error("Provide exactly one task or --task-file")
+    if args.allow_simulation and (not args.enable_magnus or not args.validation_report):
+        parser.error('--allow-simulation requires --enable-magnus and --validation-report')
     try:
         task = args.task_file.read_text(encoding="utf-8") if args.task_file else args.task
         result = asyncio.run(run_task(task, args.workspace, args.max_calls, args.trace,
-                                     progress=not args.quiet))
+                                     progress=not args.quiet, enable_magnus=args.enable_magnus,
+                                     allow_simulation=args.allow_simulation,
+                                     validation_report=args.validation_report))
     except (Exception, KeyboardInterrupt) as exc:
         print(f"Agent failed: {exc}", file=sys.stderr)
         return 1

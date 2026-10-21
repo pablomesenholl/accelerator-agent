@@ -54,4 +54,6 @@ uv sync --locked
 
 See [python-agent/README.md](python-agent/README.md) for progressive skill loading,
 configuration, and the discovery and FODO generation smoke tests. Magnus and
-simulation execution are not integrated yet.
+simulation execution are available through opt-in tools; see
+[Magnus usage](python-agent/MAGNUS.md) for operator-controlled submission and the
+direct CLI that runs without an LLM.

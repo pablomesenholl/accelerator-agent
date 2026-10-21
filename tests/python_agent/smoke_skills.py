@@ -29,6 +29,8 @@ def main() -> int:
                 'create input files, or execute anything.')
         max_calls = 4
     else:
+        # Allow longer CPU inference for skill/reference-heavy generation requests.
+        os.environ.setdefault('ACCELERATOR_AGENT_TIMEOUT', '1200')
         # Only the benchmark request is supplied; no existing benchmark output is read.
         task = (REPOSITORY / 'tests/lattice-generator/fodo-no-spacecharge/input-prompt.md').read_text()
         task += ('\n\nOperator output-location override for this test: use fodo/input/ inside '
@@ -67,6 +69,8 @@ def main() -> int:
     finally:
         trace = workspace / 'trace.jsonl'
         records = [json.loads(line) for line in trace.read_text().splitlines()] if trace.exists() else []
+        report['model'] = next((r['model'] for r in reversed(records)
+                                if r['event'] == 'start'), None)
         report['tool_calls'] = [r['name'] for r in records if r['event'] == 'tool_call']
         report['model_usage'] = [{k: v for k, v in r.items() if k != 'event'}
                                  for r in records if r['event'] == 'model_usage']

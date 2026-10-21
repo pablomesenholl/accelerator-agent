@@ -1,5 +1,8 @@
 # Standalone agent: file tools and skill discovery
 
+Phase 3 adds opt-in Magnus/OPALX tools and a direct, non-LLM CLI. See
+[Magnus usage](MAGNUS.md) for submission gates, job records, and examples.
+
 This small Google ADK `LlmAgent` connects through LiteLLM to the existing local
 Ollama server. Each CLI invocation creates a fresh in-memory session for one task.
 The design borrows ColliderAgent's separation of orchestration, prompts, and
@@ -62,8 +65,10 @@ rejected before creating directories.
 
 Other skills, including lattice-validator, opalx-simulator, and magnus, are
 already discoverable through the same interface. Loading their instructions does
-not enable their backends. This phase can generate input files but has no native
-validation, simulation, Magnus, or internet retrieval tool. If the local references
+not enable their backends. Native parser validation and internet retrieval remain
+unavailable. Magnus tools require `--enable-magnus`, and simulation submission
+requires additional operator enablement and reviewed evidence (see MAGNUS.md).
+If the local references
 are insufficient, the agent must report that limitation. No physics instructions
 are duplicated from the existing skills.
 
@@ -144,6 +149,11 @@ For the longer FODO generation smoke test, run separately when ready:
 .venv/bin/python tests/python_agent/smoke_skills.py fodo
 ```
 
+FODO mode defaults to a 1,200-second (20-minute) timeout per model request,
+allowing more CPU inference time than the previous 600-second attempt. This is
+not a whole-run time limit. An explicit `ACCELERATOR_AGENT_TIMEOUT` overrides it;
+the general agent and discovery timeout defaults remain unchanged.
+
 This passes the existing benchmark request from
 `tests/lattice-generator/fodo-no-spacecharge/input-prompt.md` to the agent.
 Only the output location is overridden to stay inside the new workspace.
@@ -218,11 +228,14 @@ The system prompt directs the model to discover, load once, search/read relevant
 reference sections, then generate files. A per-task guard stops before executing
 the third consecutive tool call with the same name and arguments. Default arguments
 and argument key order are normalized, so omitting a default does not evade it.
-Changing the tool or arguments resets the counter. The error is named
+It also detects exact two-call and three-call patterns repeated three times,
+including alternating file reads/listings. Changing retrieval ranges still allows
+progress. Read-only Magnus status/log polling resets the history and is exempt;
+submission is never exempt. The error is named
 `RepeatedToolCallError`, appears in the trace/report, and causes a nonzero exit.
 The two earlier calls may have executed; this is an early-stop diagnostic, not a
-rollback or an attempt to automatically restart the model. Alternating call loops
-are not detected, and the overall model-request limit still applies.
+rollback or an attempt to automatically restart the model. Longer or changing
+patterns are not detected, and the overall model-request limit still applies.
 
 Completed model responses now produce `model_usage` trace events and token-count
 progress messages. `TaskResult.model_usage` and smoke-test `report.json` also retain

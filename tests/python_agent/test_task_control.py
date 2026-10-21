@@ -13,7 +13,8 @@ from google.adk.models.base_llm import BaseLlm
 from google.adk.models.llm_response import LlmResponse
 from google.adk.tools.function_tool import FunctionTool
 from google.genai import types
-from agent import RepeatedToolCallError, _ToolLoopGuard, run_task
+from agent import RepeatedToolCallError, _ToolLoopGuard, _execution_handoff, run_task
+from types import SimpleNamespace
 
 
 def read_page(path: str, start_line: int = 1):
@@ -34,6 +35,47 @@ class LoopGuardTest(unittest.TestCase):
         tool = FunctionTool(read_page)
         for start in [1, 1, 2, 2, 1, 1]:
             guard.before_tool(tool, {'path': 'guide.md', 'start_line': start}, None)
+
+    def test_short_cycles_stop_before_third_repetition_completes(self):
+        for period in (2, 3):
+            with self.subTest(period=period):
+                guard = _ToolLoopGuard()
+                tools = [SimpleNamespace(name=f'inspect_{i}') for i in range(period)]
+                for index in range(period * 3 - 1):
+                    guard.before_tool(tools[index % period], {}, None)
+                with self.assertRaisesRegex(RepeatedToolCallError, f'{period}-call pattern'):
+                    guard.before_tool(tools[-1], {}, None)
+
+    def test_polling_resets_cycle_history_but_submission_is_guarded(self):
+        guard = _ToolLoopGuard()
+        for _ in range(5):
+            guard.before_tool(SimpleNamespace(name='read_file'), {'path': 'report'}, None)
+            guard.before_tool(SimpleNamespace(name='get_opalx_job_status'), {}, None)
+            guard.before_tool(SimpleNamespace(name='read_opalx_job_logs'), {}, None)
+        tool = SimpleNamespace(name='submit_opalx_simulation')
+        guard.before_tool(tool, {}, None)
+        guard.before_tool(tool, {}, None)
+        with self.assertRaises(RepeatedToolCallError):
+            guard.before_tool(tool, {}, None)
+
+    def test_changing_ranges_do_not_form_a_cycle(self):
+        guard = _ToolLoopGuard()
+        for start in range(1, 15):
+            guard.before_tool(FunctionTool(read_page), {'path': 'guide', 'start_line': start}, None)
+            guard.before_tool(SimpleNamespace(name='list_files'), {}, None)
+
+
+class ExecutionHandoffTest(unittest.TestCase):
+    def test_operator_configuration_is_explicit_including_disabled_or_failed(self):
+        for enabled, status in [(True, 'PASS'), (False, 'PASS'), (True, 'FAIL')]:
+            text = _execution_handoff(SimpleNamespace(allow_simulation=enabled, approval={
+                'status': status, 'simulation': 'input', 'input_file': 'test{1}.in',
+                'input_digest': 'digest'}))
+            config = json.loads(text.splitlines()[3])
+            self.assertEqual(config['submission_enabled'], enabled)
+            self.assertEqual(config['report_status'], status)
+            self.assertEqual(config['input_file'], 'test{1}.in')
+            self.assertIn('does not validate inputs or bypass that gate', text)
 
 
 class DiagnosticModel(BaseLlm):

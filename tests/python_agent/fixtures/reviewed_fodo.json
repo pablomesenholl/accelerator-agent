@@ -1,0 +1,21 @@
+{
+  "description": "Existing single-cell FODO fixture reviewed against its specification and local OPALX reference; native parsing explicitly skipped under current validator policy.",
+  "input": {
+    "path": "tests/lattice-validator/fodo-no-spacecharge/input/FODO-no-spacecharge.in",
+    "sha256": "661cbda8edabc162e69a117119ac11278fe4ddcb489434bb65d8f4d5809dad79"
+  },
+  "specification": {
+    "path": "tests/lattice-validator/fodo-no-spacecharge/input-prompt.md",
+    "sha256": "695015d28d1590a44f86ebd8cfa062d9c3043dd12040576d9b5f5699a2d5d140"
+  },
+  "review": {
+    "path": "tests/lattice-validator/fodo-no-spacecharge/validation-report.md",
+    "sha256": "864d0968d9b6d7f7a1d0befdff542a6c7b287928c1788e5e7e69c4ab0fda89e5"
+  },
+  "checks": {
+    "structure": "PASS",
+    "specification": "PASS",
+    "physics": "PASS",
+    "native_parser": "SKIPPED_NOT_AVAILABLE"
+  }
+}
