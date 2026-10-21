@@ -1,6 +1,7 @@
 """Minimal standalone ADK agent and single-task CLI."""
 import argparse
 import asyncio
+import inspect
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -23,6 +24,37 @@ class TaskResult:
     tool_calls: list[str] = field(default_factory=list)
     tool_results: list[dict] = field(default_factory=list)
     tool_requests: list[dict] = field(default_factory=list)
+    model_usage: list[dict] = field(default_factory=list)
+
+
+class RepeatedToolCallError(RuntimeError):
+    """A task stopped because identical tool calls were not making progress."""
+
+
+class _ToolLoopGuard:
+    def __init__(self, limit: int = 3):
+        self.limit = limit
+        self.previous = None
+        self.count = 0
+
+    def before_tool(self, tool, args, tool_context):
+        normalized = args
+        if hasattr(tool, "func"):
+            try:
+                bound = inspect.signature(tool.func).bind(**args)
+                bound.apply_defaults()
+                normalized = bound.arguments
+            except (TypeError, ValueError):
+                pass  # ADK will report missing/invalid arguments if execution proceeds.
+        signature = json.dumps([tool.name, normalized], sort_keys=True, default=str)
+        self.count = self.count + 1 if signature == self.previous else 1
+        self.previous = signature
+        if self.count >= self.limit:
+            raise RepeatedToolCallError(
+                f"Stopped before executing {tool.name}: {self.count} consecutive identical "
+                "tool calls. Reuse previous results or change the retrieval query/range. "
+                "Inspect the trace before retrying."
+            )
 
 
 class _Progress:
@@ -91,8 +123,17 @@ class _Progress:
                     details.append(f"{count} lines retrieved")
             if result.get("next_line") is not None:
                 details.append(f"next_line={result['next_line']}")
+            if result.get("already_loaded"):
+                details.append("already loaded; full instructions omitted")
             suffix = f" ({'; '.join(details)})" if details else ""
             self.show(f"OK {data['name']}{suffix}")
+        elif kind == "model_usage":
+            if data["available"]:
+                counts = ", ".join(f"{key}={data[key] if data[key] is not None else 'unknown'}"
+                                   for key in ("prompt_tokens", "output_tokens", "total_tokens"))
+                self.show(f"Tokens for request {data['request']}: {counts}")
+            else:
+                self.show(f"Tokens for request {data['request']}: usage unavailable")
         elif kind == "final":
             self.show("Agent finished.")
         elif kind == "error":
@@ -107,6 +148,8 @@ async def run_task(task: str, workspace: Path, max_calls: int = 8,
     trace_file = files._path(trace) if trace else None
     if trace_file:
         trace_file.parent.mkdir(parents=True, exist_ok=True)
+    result = TaskResult()
+    guard = _ToolLoopGuard()
 
     def record(kind: str, data: dict):
         display.record(kind, data)
@@ -114,17 +157,35 @@ async def run_task(task: str, workspace: Path, max_calls: int = 8,
             with trace_file.open("a", encoding="utf-8") as stream:
                 stream.write(json.dumps({"event": kind, **data}, ensure_ascii=False) + "\n")
 
+    def after_model(callback_context, llm_response):
+        display.after_model(callback_context, llm_response)
+        if llm_response.partial:
+            return
+        metadata = llm_response.usage_metadata
+        counts = {name: getattr(metadata, field, None) for name, field in (
+            ("prompt_tokens", "prompt_token_count"),
+            ("output_tokens", "candidates_token_count"),
+            ("total_tokens", "total_token_count"),
+            ("cached_tokens", "cached_content_token_count"),
+            ("reasoning_tokens", "thoughts_token_count"),
+        )}
+        usage = {"request": display.model_calls,
+                 "available": any(value is not None for value in counts.values()),
+                 **counts}
+        result.model_usage.append(usage)
+        record("model_usage", usage)
+
     agent = LlmAgent(
         name="accelerator_agent",
         model=create_model(),
         instruction=(Path(__file__).parent / "prompts" / "sytem.md").read_text(),
         tools=[files.read_file, files.write_file, files.edit_file, files.list_files,
                library.list_skills, library.load_skill, library.read_skill_document],
-        before_model_callback=display.before_model if progress else None,
-        after_model_callback=display.after_model if progress else None,
+        before_model_callback=display.before_model,
+        after_model_callback=after_model,
+        before_tool_callback=guard.before_tool,
     )
     runner = InMemoryRunner(agent=agent, app_name="accelerator_agent")
-    result = TaskResult()
     heartbeat = None
     try:
         record("start", {"task": task, "model": str(agent.model.model), "max_calls": max_calls})

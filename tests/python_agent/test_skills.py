@@ -45,6 +45,25 @@ class SkillLibraryTest(unittest.TestCase):
         self.assertEqual(result['documents'], ['SKILL.md', 'references/guide.md'])
         self.assertIsNone(result['next_line'])
 
+    def test_repeat_load_omits_content_and_a_new_library_starts_fresh(self):
+        first = self.library.load_skill('example')
+        repeat = self.library.load_skill('example')
+        self.assertTrue(repeat['already_loaded'])
+        self.assertNotIn('content', repeat)
+        self.assertEqual(first['documents'], repeat['documents'])
+        self.assertIn('read_skill_document', repeat['message'])
+        self.assertIn('content', SkillLibrary(self.root).load_skill('example'))
+        # Explicit bounded retrieval remains available for instructions and references.
+        self.assertIn('content', self.library.read_skill_document('example', line_count=10))
+
+    def test_failed_load_is_not_remembered(self):
+        target = self.skill / 'SKILL.md'
+        valid = target.read_text()
+        target.write_text('invalid')
+        self.assertIn('error', self.library.load_skill('example'))
+        target.write_text(valid)
+        self.assertIn('content', self.library.load_skill('example'))
+
     def test_bounded_paging_and_search(self):
         result = self.library.read_skill_document('example', 'references/guide.md', line_count=99999)
         self.assertLessEqual(len(result['content']), MAX_DOCUMENT_CHARS)

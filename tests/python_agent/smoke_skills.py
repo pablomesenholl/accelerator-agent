@@ -68,6 +68,8 @@ def main() -> int:
         trace = workspace / 'trace.jsonl'
         records = [json.loads(line) for line in trace.read_text().splitlines()] if trace.exists() else []
         report['tool_calls'] = [r['name'] for r in records if r['event'] == 'tool_call']
+        report['model_usage'] = [{k: v for k, v in r.items() if k != 'event'}
+                                 for r in records if r['event'] == 'model_usage']
         report['documentation_accesses'] = [
             {key: r['response'].get(key) for key in
              ('skill', 'document', 'start_line', 'next_line', 'total_lines')}

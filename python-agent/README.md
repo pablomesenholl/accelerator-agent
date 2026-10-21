@@ -202,5 +202,40 @@ The final CLI response stays on stdout. Hide progress with:
 ```
 
 Python callers can use `run_task(..., progress=False)`. The existing trace format
-and trace option are unchanged. Already-running processes keep their original
+and trace option remain available. Already-running processes keep their original
 behavior; no restart is needed to let an existing FODO run finish.
+
+## Avoiding repeated calls and diagnosing context growth
+
+Within each task, the first successful `load_skill` returns instructions as before.
+Subsequent loads of the same skill return `already_loaded: true`, the document
+manifest, pagination metadata, and a short next-step reminder, without another
+copy of the instructions. Failed loads are not remembered. A new task starts
+fresh. Explicit bounded instruction/reference retrieval remains available through
+`read_skill_document`; no source skills are changed or summarized by the loader.
+
+The system prompt directs the model to discover, load once, search/read relevant
+reference sections, then generate files. A per-task guard stops before executing
+the third consecutive tool call with the same name and arguments. Default arguments
+and argument key order are normalized, so omitting a default does not evade it.
+Changing the tool or arguments resets the counter. The error is named
+`RepeatedToolCallError`, appears in the trace/report, and causes a nonzero exit.
+The two earlier calls may have executed; this is an early-stop diagnostic, not a
+rollback or an attempt to automatically restart the model. Alternating call loops
+are not detected, and the overall model-request limit still applies.
+
+Completed model responses now produce `model_usage` trace events and token-count
+progress messages. `TaskResult.model_usage` and smoke-test `report.json` also retain
+these entries, including in quiet mode. Fields are `request`, `available`,
+`prompt_tokens`, `output_tokens`, `total_tokens`, `cached_tokens`, and
+`reasoning_tokens`. Missing counts are null rather than estimated; missing usage
+is explicitly marked unavailable. Counts reflect what the installed provider/ADK
+adapter reports, not an independent tokenizer measurement. A timed-out request
+may produce no response usage. These records can reveal input growth but cannot
+alone prove whether Ollama truncated history or why a request timed out.
+
+The change prevents duplicate skill instructions from accumulating. It does not
+compact older reference pages, guarantee that the model follows the workflow, or
+establish successful FODO generation. All 24 Python-agent tests passed on
+2026-10-21 in about 107 seconds, including the new regression tests and the live
+Qwen 2B file-tool test with token reporting. The FODO test was not run.

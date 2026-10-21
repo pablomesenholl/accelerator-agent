@@ -45,6 +45,8 @@ def _metadata(text: str) -> dict:
 class SkillLibrary:
     def __init__(self, root: Path = DEFAULT_SKILLS_ROOT):
         self.root = root.resolve()
+        # One library instance per task. Keep metadata, not duplicate instruction text.
+        self._loaded: dict[str, dict] = {}
 
     def _path(self, skill: str, document: str = "SKILL.md") -> Path:
         if not skill or Path(skill).name != skill or skill in {".", ".."}:
@@ -90,8 +92,14 @@ class SkillLibrary:
         """Load a selected skill's instructions and list its documentation paths.
 
         If instructions are truncated, continue SKILL.md using read_skill_document.
+        Load each skill once per task; repeat calls return a short reminder.
         Loading a skill does not execute code or grant additional tools.
         """
+        if skill in self._loaded:
+            return {**self._loaded[skill], "already_loaded": True,
+                    "message": "Instructions were already loaded in this task. Reuse them; "
+                               "search/read the listed references with read_skill_document. "
+                               "If next_line is set, continue SKILL.md at that line."}
         try:
             text = self._text(skill, "SKILL.md")
             _metadata(text)
@@ -106,9 +114,10 @@ class SkillLibrary:
                 documents.append(relative)
             lines = text.splitlines()
             content, next_line = self._page(lines, 1, len(lines), MAX_INSTRUCTION_CHARS)
-            return {"skill": skill, "document": "SKILL.md", "content": content,
-                    "total_lines": len(lines), "next_line": next_line,
-                    "documents": documents}
+            metadata = {"skill": skill, "document": "SKILL.md", "total_lines": len(lines),
+                        "next_line": next_line, "documents": documents}
+            self._loaded[skill] = metadata
+            return {**metadata, "content": content}
         except (OSError, ValueError) as exc:
             return {"error": str(exc)}
 

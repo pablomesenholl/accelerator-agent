@@ -47,7 +47,8 @@ class ProgressTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(result.tool_calls, ['list_skills'])
             events = [json.loads(line) for line in (Path(directory)/'trace.jsonl').read_text().splitlines()]
             self.assertEqual([event['event'] for event in events],
-                             ['start', 'tool_call', 'tool_result', 'final'])
+                             ['start', 'model_usage', 'tool_call', 'tool_result',
+                              'model_usage', 'final'])
             self.assertFalse(any(task.get_coro().__qualname__ == '_Progress.heartbeat'
                                  for task in asyncio.all_tasks()))
 

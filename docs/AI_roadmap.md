@@ -55,6 +55,17 @@
   exist, but the broader step 4 remains future work. Thinking remains off by
   default; response/context limits are configurable for documentation and inputs.
 - Use this roadmap to track progress across development sessions.
+- 2026-10-21: the 2B FODO attempt repeatedly loaded the identical generator skill
+  four times and timed out on request 6; no references or `.in` files were produced
+  (`output/python-agent/fodo-20261021T163303376847Z/`). The user-selected 2B model
+  configuration is preserved.
+- Follow-up implementation: per-task load-once skill reminders, a guard stopping
+  before the third consecutive identical tool call, clearer retrieval/generation
+  instructions, and per-response token-usage records in traces and smoke reports.
+  Verification: all 24 Python-agent tests passed in about 107 seconds, including
+  the new regression tests and the live Qwen 2B temporary-file write/read test.
+  The live test reported token counts for all three model responses. No FODO test
+  or simulation was run.
 - Follow-up: shared readable stderr progress in `agent.py` shows model waiting
   times, tool calls/results, and errors, with a 30-second heartbeat and `--quiet`.
   Offline ADK tests cover callbacks, output summaries, quiet mode, and cleanup;
