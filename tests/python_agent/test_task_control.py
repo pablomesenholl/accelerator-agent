@@ -13,7 +13,7 @@ from google.adk.models.base_llm import BaseLlm
 from google.adk.models.llm_response import LlmResponse
 from google.adk.tools.function_tool import FunctionTool
 from google.genai import types
-from agent import RepeatedToolCallError, _ToolLoopGuard, _execution_handoff, run_task
+from agent import RepeatedToolCallError, _ToolLoopGuard, _SkillHandoff, _execution_handoff, run_task
 from types import SimpleNamespace
 
 
@@ -78,6 +78,83 @@ class ExecutionHandoffTest(unittest.TestCase):
             self.assertIn('does not validate inputs or bypass that gate', text)
 
 
+class SkillHandoffTest(unittest.TestCase):
+    def test_reference_content_advances_but_search_errors_and_reloads_do_not(self):
+        handoff = _SkillHandoff()
+        load = SimpleNamespace(name='load_skill')
+        read = SimpleNamespace(name='read_skill_document')
+        metadata = {'skill': 'example', 'documents': ['SKILL.md', 'references/syntax.md']}
+        handoff.after_tool(load, {}, None, metadata)
+        for response in ({'error': 'missing'},
+                         {'skill': 'example', 'document': 'references/syntax.md', 'matches': []},
+                         {'skill': 'example', 'document': 'SKILL.md', 'content': 'instructions'}):
+            handoff.after_tool(read, {}, None, response)
+            self.assertIn('example', handoff.pending)
+        handoff.after_tool(read, {}, None, {
+            'skill': 'example', 'document': 'references/syntax.md', 'content': 'syntax'})
+        handoff.after_tool(load, {}, None, {**metadata, 'already_loaded': True})
+        self.assertEqual(handoff.pending, {})
+
+    def test_no_reference_or_failed_load_does_not_create_handoff(self):
+        handoff = _SkillHandoff()
+        for response in ({'error': 'missing'}, {'skill': 'plain', 'documents': ['SKILL.md']}):
+            handoff.after_tool(SimpleNamespace(name='load_skill'), {}, None, response)
+        self.assertEqual(handoff.pending, {})
+
+
+class ReferenceModel(BaseLlm):
+    model: str = 'offline-reference-handoff'
+
+    async def generate_content_async(self, llm_request, stream=False):
+        count = sum(bool(p.function_response) for c in llm_request.contents for p in c.parts or [])
+        instructions = llm_request.config.system_instruction or ''
+        if count == 1:
+            assert 'Skill-to-reference handoff' in instructions
+            assert 'references/opalx-input-reference.md' in instructions
+            part = types.Part(function_call=types.FunctionCall(name='read_skill_document', args={
+                'skill': 'lattice-generator', 'document': 'references/opalx-input-reference.md',
+                'start_line': 1, 'line_count': 20}))
+        elif count == 0:
+            assert 'Skill-to-reference handoff' not in instructions
+            part = types.Part(function_call=types.FunctionCall(
+                name='load_skill', args={'skill': 'lattice-generator'}))
+        else:
+            assert 'Skill-to-reference handoff' not in instructions
+            part = types.Part(text='Done')
+        yield LlmResponse(content=types.Content(role='model', parts=[part]))
+
+
+class GenerationModel(BaseLlm):
+    model: str = 'offline-generation-handoff'
+    produce_file: bool = True
+
+    async def generate_content_async(self, llm_request, stream=False):
+        responses = [p.function_response for c in llm_request.contents for p in c.parts or []
+                     if p.function_response]
+        count = len(responses)
+        continuation = any('only automatic continuation' in (p.text or '')
+                           for c in llm_request.contents for p in c.parts or [])
+        instructions = llm_request.config.system_instruction or ''
+        if count == 0:
+            part = types.Part(function_call=types.FunctionCall(
+                name='load_skill', args={'skill': 'lattice-generator'}))
+        elif count == 1:
+            part = types.Part(function_call=types.FunctionCall(name='read_skill_document', args={
+                'skill': 'lattice-generator', 'document': 'references/opalx-input-reference.md',
+                'line_count': 20}))
+        elif count == 2:
+            assert 'Reference-to-generation handoff' in instructions
+            if continuation and self.produce_file:
+                part = types.Part(function_call=types.FunctionCall(name='write_file', args={
+                    'path': 'example.in', 'content': 'offline fixture;'}))
+            else:
+                part = types.Part(text='```json\n\n```')
+        else:
+            assert 'Reference-to-generation handoff' not in instructions
+            part = types.Part(text='Created example.in')
+        yield LlmResponse(content=types.Content(role='model', parts=[part]))
+
+
 class DiagnosticModel(BaseLlm):
     model: str = 'offline-diagnostics'
     repeat: bool = False
@@ -100,6 +177,39 @@ class DiagnosticModel(BaseLlm):
 
 
 class TaskDiagnosticsTest(unittest.IsolatedAsyncioTestCase):
+    async def test_generation_continues_once_using_existing_session_and_budget(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch('agent.create_model', return_value=GenerationModel()):
+                result = await run_task('Generate input', root, trace='trace.jsonl',
+                                        progress=False, require_file_output=True)
+            self.assertEqual((root/'example.in').read_text(), 'offline fixture;')
+            events = [json.loads(line) for line in (root/'trace.jsonl').read_text().splitlines()]
+            self.assertEqual(sum(e['event'] == 'continuation' for e in events), 1)
+            self.assertEqual(result.response, 'Created example.in')
+            self.assertEqual(result.tool_calls.count('load_skill'), 1)
+
+    async def test_generation_without_writes_stops_after_one_continuation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch('agent.create_model', return_value=GenerationModel(produce_file=False)):
+                with self.assertRaisesRegex(RuntimeError, 'without a successful nonempty'):
+                    await run_task('Generate input', Path(directory), progress=False,
+                                   require_file_output=True)
+
+    async def test_generation_does_not_continue_when_request_budget_is_exhausted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch('agent.create_model', return_value=GenerationModel()):
+                with self.assertRaisesRegex(RuntimeError, 'without a successful nonempty'):
+                    await run_task('Generate input', Path(directory), max_calls=3,
+                                   progress=False, require_file_output=True)
+
+    async def test_adk_request_receives_then_clears_reference_handoff(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch('agent.create_model', return_value=ReferenceModel()):
+                result = await run_task('Consult documentation', Path(directory), progress=False)
+        self.assertEqual(result.tool_calls, ['load_skill', 'read_skill_document'])
+        self.assertEqual(result.response, 'Done')
+
     async def test_real_adk_loop_stops_and_trace_preserves_diagnostic(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

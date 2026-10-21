@@ -77,6 +77,28 @@
   exist, but the broader step 4 remains future work. Thinking remains off by
   default; response/context limits are configurable for documentation and inputs.
 - Use this roadmap to track progress across development sessions.
+- Coder diagnostic: raw Ollama/LiteLLM returned fenced tool JSON as text; ADK's
+  fallback successfully copied a tiny file but ended with empty JSON. Offline
+  replay found empty fence remnants accompanying recovered tool calls, while the
+  installed Ollama template prioritizes text and hides those calls in history.
+  This is a concrete compatibility concern, not proof of the sole FODO cause.
+  See `python-agent/DIAGNOSTICS.md`; runtime fixes and FODO retesting remain pending.
+- Empty-fence compatibility fix now removes only empty fence text accompanying
+  function calls before ADK stores history. Forty focused offline tests passed.
+  The short live coder copy probe passed with a meaningful final response; captured
+  outgoing history confirmed no fence remnants (one redundant write remained).
+  ColliderAgent's Python implementation was consulted directly; the core ADK /
+  LiteLLM / tools / runner architecture is retained. FODO verification is pending.
+- Generation follow-up: added a generic skill-to-reference handoff to model
+  requests after loading a skill with associated documents. It points to bounded
+  retrieval through `read_skill_document` and clears after reference content is
+  returned. No tool restrictions or physics templates were added. Live model
+  verification remains pending; this does not establish generation correctness.
+- Generation follow-up now keeps a post-reference generation reminder and enables
+  one same-session continuation for the FODO smoke if no successful file write
+  occurred. The original request budget remains in force; a second premature
+  finish fails. Thirty-six focused offline tests passed, including continuation
+  success, bounded failure and budget exhaustion. Qwen was not rerun.
 - 2026-10-21: the 2B FODO attempt repeatedly loaded the identical generator skill
   four times and timed out on request 6; no references or `.in` files were produced
   (`output/python-agent/fodo-20261021T163303376847Z/`). The user-selected 2B model

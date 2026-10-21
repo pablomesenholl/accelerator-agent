@@ -3,6 +3,7 @@ import argparse
 import asyncio
 import inspect
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 import sys
@@ -30,6 +31,23 @@ class TaskResult:
 
 class RepeatedToolCallError(RuntimeError):
     """A task stopped because identical tool calls were not making progress."""
+
+
+def _remove_empty_tool_fences(llm_response):
+    """Remove ADK inline-tool parser remnants before they enter session history."""
+    if llm_response.partial or not llm_response.content:
+        return None
+    parts = llm_response.content.parts or []
+    if not any(part.function_call for part in parts):
+        return None
+    kept = [part for part in parts if not (
+        part.text is not None and not part.thought
+        and re.fullmatch(r'\s*```(?:json)?[ \t]*\r?\n\s*```\s*',
+                         part.text, flags=re.IGNORECASE))]
+    if len(kept) == len(parts):
+        return None
+    return llm_response.model_copy(update={
+        'content': llm_response.content.model_copy(update={'parts': kept})})
 
 
 class _ToolLoopGuard:
@@ -97,6 +115,60 @@ def _execution_handoff(magnus: MagnusTools) -> str:
         'status/logs, and retrieve outputs when complete. Stop on gate errors and '
         'report them; do not edit the input or approval to bypass them.'
     )
+
+
+class _SkillHandoff:
+    """Per-task guidance from successful skill loads to bounded reference reads."""
+
+    def __init__(self, require_file_output=False):
+        self.pending = {}
+        self.retrieved = set()
+        self.require_file_output = require_file_output
+        self.file_written = False
+
+    def after_tool(self, tool, args, tool_context, tool_response):
+        if not isinstance(tool_response, dict) or 'error' in tool_response:
+            return
+        if tool.name in {'write_file', 'edit_file'} and (
+                tool_response.get('written') or tool_response.get('edited')):
+            if tool.name == 'edit_file' or args.get('content', '').strip():
+                self.file_written = True
+        skill = tool_response.get('skill')
+        if tool.name == 'load_skill' and skill and skill not in self.retrieved:
+            documents = [p for p in tool_response.get('documents', []) if p != 'SKILL.md']
+            if documents:
+                self.pending[skill] = documents
+        elif (tool.name == 'read_skill_document' and skill in self.pending
+              and tool_response.get('document') in self.pending[skill]
+              and tool_response.get('content', '').strip()):
+            self.pending.pop(skill)
+            self.retrieved.add(skill)
+
+    def before_model(self, callback_context, llm_request):
+        if self.pending:
+            llm_request.append_instructions([
+                'Skill-to-reference handoff: instructions are already loaded. '
+                'Next, use read_skill_document with the skill and document path '
+                'listed below. Search for a relevant topic, then read a bounded '
+                'line range containing the required syntax. Search matches alone '
+                'are not retrieved instructions. Continue truncated SKILL.md first '
+                'if needed. Do not reload the skill or look for these documents '
+                'with workspace read_file/list_files. Retrieve relevant reference '
+                'content before generating domain files. After retrieval, follow '
+                'the skill and proceed with the requested task; more sections may '
+                'still be needed. Pending references: '
+                + json.dumps(self.pending, ensure_ascii=False)
+            ])
+        if self.require_file_output and self.retrieved and not self.file_written:
+            llm_request.append_instructions([
+                'Reference-to-generation handoff: the requested file-generation task '
+                'is still unfinished. A reference page is not the whole document; '
+                'follow next_line or search/read other relevant sections as needed. '
+                'Then use write_file/edit_file to produce the requested workspace '
+                'files following the skill. Do not finish with an empty code block '
+                'or a promise to write files. Report actual paths and limitations. '
+                'If blocked, explain the specific missing information honestly.'
+            ])
 
 
 class _Progress:
@@ -186,7 +258,8 @@ class _Progress:
 async def run_task(task: str, workspace: Path, max_calls: int = 8,
                    trace: str | None = None, progress: bool = True,
                    enable_magnus: bool = False, allow_simulation: bool = False,
-                   validation_report: str | None = None) -> TaskResult:
+                   validation_report: str | None = None,
+                   require_file_output: bool = False) -> TaskResult:
     if allow_simulation and (not enable_magnus or not validation_report):
         raise ValueError('Simulation requires enable_magnus and validation_report')
     display = _Progress(progress)
@@ -207,6 +280,7 @@ async def run_task(task: str, workspace: Path, max_calls: int = 8,
         trace_file.parent.mkdir(parents=True, exist_ok=True)
     result = TaskResult()
     guard = _ToolLoopGuard()
+    handoff = _SkillHandoff(require_file_output)
 
     def record(kind: str, data: dict):
         display.record(kind, data)
@@ -231,6 +305,7 @@ async def run_task(task: str, workspace: Path, max_calls: int = 8,
                  **counts}
         result.model_usage.append(usage)
         record("model_usage", usage)
+        return _remove_empty_tool_fences(llm_response)
 
     agent = LlmAgent(
         name="accelerator_agent",
@@ -239,9 +314,10 @@ async def run_task(task: str, workspace: Path, max_calls: int = 8,
         # not interpret them as session-state placeholders.
         instruction=lambda ctx: instruction,
         tools=tools,
-        before_model_callback=display.before_model,
+        before_model_callback=[display.before_model, handoff.before_model],
         after_model_callback=after_model,
         before_tool_callback=guard.before_tool,
+        after_tool_callback=handoff.after_tool,
     )
     runner = InMemoryRunner(agent=agent, app_name="accelerator_agent")
     heartbeat = None
@@ -253,27 +329,44 @@ async def run_task(task: str, workspace: Path, max_calls: int = 8,
         session = await runner.session_service.create_session(
             app_name="accelerator_agent", user_id="local"
         )
-        async for event in runner.run_async(
-            user_id="local", session_id=session.id,
-            new_message=types.Content(role="user", parts=[types.Part(text=task)]),
-            run_config=RunConfig(max_llm_calls=max_calls),
-        ):
-            if event.error_code:
-                raise RuntimeError(event.error_message or event.error_code)
-            for call in event.get_function_calls():
-                result.tool_calls.append(call.name)
-                request = {"name": call.name, "args": call.args or {}}
-                result.tool_requests.append(request)
-                record("tool_call", request)
-            for response in event.get_function_responses():
-                entry = {"name": response.name, "response": response.response}
-                result.tool_results.append(entry)
-                record("tool_result", entry)
-            if event.is_final_response() and event.content:
-                result.response = "\n".join(
-                    part.text for part in event.content.parts or []
-                    if part.text and not part.thought
-                )
+        message = task
+        for attempt in range(2):
+            result.response = ""
+            async for event in runner.run_async(
+                user_id="local", session_id=session.id,
+                new_message=types.Content(role="user", parts=[types.Part(text=message)]),
+                run_config=RunConfig(max_llm_calls=max_calls - display.model_calls),
+            ):
+                if event.error_code:
+                    raise RuntimeError(event.error_message or event.error_code)
+                for call in event.get_function_calls():
+                    result.tool_calls.append(call.name)
+                    request = {"name": call.name, "args": call.args or {}}
+                    result.tool_requests.append(request)
+                    record("tool_call", request)
+                for response in event.get_function_responses():
+                    entry = {"name": response.name, "response": response.response}
+                    result.tool_results.append(entry)
+                    record("tool_result", entry)
+                if event.is_final_response() and event.content:
+                    result.response = "\n".join(
+                        part.text for part in event.content.parts or []
+                        if part.text and not part.thought
+                    )
+            if not require_file_output or handoff.file_written:
+                break
+            if attempt == 1 or display.model_calls >= max_calls:
+                raise RuntimeError("File-generation task ended without a successful nonempty file write")
+            record("continuation", {"reason": "No successful nonempty file write", "attempt": 1,
+                                    "response": result.response})
+            display.show("No generated file; continuing once within the remaining model-request budget.")
+            message = (
+                "The original file-generation task is unfinished: no successful nonempty "
+                "workspace file write was recorded. Continue from the existing skill/reference "
+                "results. Retrieve missing relevant sections, then write the requested files. "
+                "Do not restart discovery or reload skills. If blocked, explain the specific "
+                "reason; do not invent syntax. This is the only automatic continuation."
+            )
         if not result.response:
             raise RuntimeError("Model returned no final text response")
         record("final", {"response": result.response})

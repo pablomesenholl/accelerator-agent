@@ -2,6 +2,8 @@
 
 Phase 3 adds opt-in Magnus/OPALX tools and a direct, non-LLM CLI. See
 [Magnus usage](MAGNUS.md) for submission gates, job records, and examples.
+See [coder diagnostics](DIAGNOSTICS.md) for the small Ollama/LiteLLM/ADK comparison
+and the identified tool-history compatibility concern.
 
 This small Google ADK `LlmAgent` connects through LiteLLM to the existing local
 Ollama server. Each CLI invocation creates a fresh in-memory session for one task.
@@ -225,7 +227,27 @@ fresh. Explicit bounded instruction/reference retrieval remains available throug
 `read_skill_document`; no source skills are changed or summarized by the loader.
 
 The system prompt directs the model to discover, load once, search/read relevant
-reference sections, then generate files. A per-task guard stops before executing
+reference sections, then generate files. After a successful skill load that lists
+references, a per-task callback adds an explicit handoff to subsequent model
+requests: use `read_skill_document` with the returned skill/document paths, search
+relevant topics, then retrieve bounded content before generation. Workspace file
+tools cannot read these reference paths. The handoff clears once nonempty content
+from a listed reference is returned; search matches and failed reads do not clear
+it. Skills without references get no extra handoff. This is guidance, not tool
+restriction or proof that all necessary documentation was read. No physics syntax
+or benchmark templates are embedded in the handoff.
+
+The FODO smoke also enables `run_task(require_file_output=True)`. After reference
+retrieval, an explicit generation reminder stays active until a successful
+nonempty `write_file` (or successful `edit_file`). If the model finishes without
+such a write, the agent continues once in the same session, reusing documentation
+and the remaining original model-request budget. The trace records a
+`continuation` event with the premature response. A second finish without a write
+fails explicitly. This checks file-tool progress, not file completeness or OPALX
+validity; the smoke's `.in` checks still apply. Other tasks retain their default
+behavior. No live model verification has been performed for this follow-up.
+
+A per-task guard stops before executing
 the third consecutive tool call with the same name and arguments. Default arguments
 and argument key order are normalized, so omitting a default does not evade it.
 It also detects exact two-call and three-call patterns repeated three times,

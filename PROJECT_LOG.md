@@ -109,4 +109,11 @@ Project Log
 	create first version of file_tools for python-agent including tests: works
 	create first version of skills_tools for python-agent inlcuding tests: model times out, failes
 	Learn about Euler and set up the account
+21.10.26:
+	test qwen3.5:2b model for python-agent fodo input generation
+	update skills tool for python agent to prevent loop tool call
+	qwen3.5:2b model for python-agent fodo input generation created fodo.in, but with wrong syntax
+	implement phase 3 of python-agent: magnus_tool, but live qwen test failed
+	change to qwen2.5:3b-codel model
+	experiment and update fodo.in generation test: all fail
 	

@@ -43,7 +43,8 @@ def main() -> int:
     started = time.monotonic()
     report = {'mode': args.mode, 'workspace': str(workspace), 'success': False}
     try:
-        result = asyncio.run(run_task(task, workspace, max_calls, trace='trace.jsonl'))
+        result = asyncio.run(run_task(task, workspace, max_calls, trace='trace.jsonl',
+                                      require_file_output=args.mode == 'fodo'))
         (workspace / 'response.txt').write_text(result.response)
         assert 'list_skills' in result.tool_calls, 'Model did not invoke discovery'
         catalogs = [item['response'] for item in result.tool_results if item['name'] == 'list_skills']
