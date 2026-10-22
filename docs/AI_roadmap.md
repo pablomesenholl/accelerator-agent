@@ -1,4 +1,4 @@
-# Roadmap ond overview for AI implementations for accelerator-agent
+# Roadmap and overview for AI implementations for accelerator-agent
 
 ## Models to explore
 
@@ -23,6 +23,39 @@
 2. integrate existing skills to python-agent, such that model can e.g. use lattice genertor to produce a .in file
 3. integrate a tool for the python-agent to use magnus and oplax, such that model can try to run simulations
 4. make agent reusable: model configuration, basic logging, error handling, documentation and simple integration tests -> models can be switched without modifying the agent code
+
+## Current status (2026-10-22)
+
+**Phase 4 is complete within the scope above.** The reusable v0.1 runtime has
+validated model configuration, progress/logging, persistent run summaries,
+structured lifecycle errors, usage documentation, and deterministic integration
+checks. The final offline suite discovered 78 tests: 77 passed and one opt-in live
+test was skipped. No live Qwen or backend testing was performed for this final step.
+
+This completes the first runtime baseline, not a full autonomous physics agent.
+The Python agent still lacks these crucial capabilities:
+
+- Native parser-only OPALX validation and its backend/tool integration. Validation
+  instructions are discoverable, but submission uses operator-supplied matching
+  review evidence; there is no deterministic validator implementing those checks.
+- Scientific output readers and analysis tools for SDDS/HDF5, beam/optics metrics,
+  and plots. `python-agent/tools/result_tools.py` is still a placeholder.
+
+Successful complete model-generated OPALX inputs and reliable model-driven
+simulation remain unverified. These are distinct workflow-verification gaps;
+scripted fixture generation and fake-backend success do not resolve them. The
+earlier direct real-backend smoke verifies the execution adapter only.
+Persistent conversation resume, context compaction, automatic repair/optimization,
+and internet retrieval are additional extensions outside this phase's scope.
+
+The next implementation priorities are the validation handoff and result-analysis
+capabilities, followed by independent end-to-end verification of the separate
+generation, validation, simulation, and analysis stages. Local-model feasibility
+and a ColliderAgent comparison remain a separate future experiment. Phase 4 is
+not contingent on that experiment. See
+[the Python-agent guide](../python-agent/README.md) for completion evidence,
+offline commands, and capability limits. The entries below retain development
+history and their historical verification counts.
 
 ## Progress (2026-10-20)
 
@@ -73,8 +106,9 @@
   Submission gates are unchanged. Thirty focused offline checks passed; Qwen was
   not rerun, so model-driven execution remains the next manual verification.
   See `python-agent/MAGNUS.md` for usage and remaining limits.
-- Some configuration, error handling, and test basics
-  exist, but the broader step 4 remains future work. Thinking remains off by
+- Step 4 is now complete for its reusable-runtime scope, including validated model
+  configuration, run records/errors, documentation, and offline integration
+  checks (see the 2026-10-22 entries below). Thinking remains off by
   default; response/context limits are configurable for documentation and inputs.
 - Use this roadmap to track progress across development sessions.
 - Coder diagnostic: raw Ollama/LiteLLM returned fenced tool JSON as text; ADK's
@@ -118,3 +152,69 @@
 - FODO smoke timeout now defaults to 1,200 seconds per model request, with explicit
   environment overrides preserved. This timeout-only adjustment has not been
   verified through another live FODO run.
+- 2026-10-22, Phase 4 configuration: immutable validated settings preserve the
+  user's `ollama_chat/qwen3.5:2b` default and existing environment overrides.
+  Generic API endpoint/key overrides support provider switching; Ollama context
+  and default reasoning are sent only to Ollama. Numeric limits, reasoning values,
+  and endpoint structure are checked before adapter construction. `--show-config`
+  prints settings without endpoint/key values or a model request. No dependencies,
+  skills, blueprints, or backend execution code changed. Documentation describes
+  precedence, provider-native credentials, validation limits, and reproduction.
+  Verification: 58 offline tests passed and one live test was skipped, including
+  six new configuration tests. The sandboxed suite timed out at 180 seconds in a
+  scripted ADK test; outside the sandbox all tests completed in about three seconds
+  of test execution. Python's sandboxed Ollama connection was explicitly denied;
+  live checks were run outside the sandbox. Separate temporary-workspace file-tool
+  checks passed for `qwen3.5:2b` (101 seconds, three requests) and
+  `qwen2.5-coder:3b` (119 seconds, four requests, one redundant read), using a
+  180-second request timeout, 128 output tokens, and an 8,192-token context.
+  This establishes basic model switching and file-tool use, not FODO generation
+  or reliable model-driven simulation. Remote providers were tested only through
+  offline argument checks. At this checkpoint, consistent run records and
+  startup/error reporting were the next Phase 4 work; comparison with ColliderAgent on small local
+  models remains a separate follow-up.
+- 2026-10-22, Phase 4 run records/errors: every initialized task now has an
+  atomically replaced `.agent-runs/<run_id>.json` summary within its workspace,
+  with safe configuration, UTC timing, session ID, request/tool counts, usage,
+  terminal status, structured errors, and separate cleanup failures. Running
+  checkpoints are saved before waiting for model responses. Optional JSONL traces
+  retain existing events and gain run IDs and timing metadata. Agent file tools
+  and trace destinations cannot access the run-record tree. Task-file reads,
+  configuration, setup/session creation, execution, and cleanup share one error
+  lifecycle; original Python exceptions are preserved and CLI failures report a
+  category/type and record path. Configured credential values are redacted from
+  recorded strings and URLs from terminal errors. Summaries omit task/response
+  text and tool payload fields; detailed traces remain opt-in. Completion requires
+  final text, successful cleanup, and successful recording, and does not imply
+  physics or backend success. Invalid/unwritable workspaces may prevent recording;
+  hard termination may leave a running checkpoint. No automatic retries or resume
+  behavior were added. Verification: 72 offline tests passed, one live test
+  skipped, including 14 new lifecycle tests; tests ran outside the sandbox due to
+  the previously observed scripted ADK stall. No live models, FODO generation,
+  validation, or simulations were run. Existing configuration work, skills,
+  blueprints, dependencies, backend scripts, and Magnus submission gates were
+  preserved. At this checkpoint, remaining Phase 4 work was a final integration/documentation review;
+  reliable small-model physics workflows and the ColliderAgent local-model
+  comparison remain separately unverified.
+- 2026-10-22, Phase 4 integration/documentation completion: consulted
+  [ColliderAgent's runtime](https://github.com/HET-AGI/ColliderAgent/blob/main/python-agent/agent.py)
+  and [pipeline test](https://github.com/HET-AGI/ColliderAgent/blob/main/python-agent/tests/test_e2e_pipeline.py).
+  Its ADK/LiteLLM/tool/runner pattern is retained; its domain validation and
+  analysis capabilities are not implemented here merely through skill discovery.
+  Added five offline integration tests through the actual CLI, model factory,
+  LiteLLM conversion, ADK runner, skills, workspace files, and run records. Provider
+  responses are scripted at the transport boundary and socket connections are
+  rejected during those runs. Tests cover both local model selectors and an
+  OpenAI-compatible fixture selector, provider failure/redaction, denied
+  submission, and approved fake-backend submission followed by a fresh session's
+  status/log/retrieval without a second launch. Real CLI subprocess checks from
+  another directory cover help, configuration, invalid settings, and task-file
+  failure, with per-process timeouts. Synthetic inputs and review reports are
+  wiring fixtures only. No runtime defects requiring changes were found.
+  Verification: 77 offline tests passed, one live test skipped (78 total; about
+  eight seconds of test execution), outside the sandbox due to the known ADK
+  thread/event-loop limitation. No live Qwen, remote-provider, Magnus, or OPALX
+  calls, blueprint registrations, or dependency changes were made. Documentation
+  was updated after testing, including current defaults, offline commands,
+  completion criteria, and missing capabilities. Phase 4 is complete; the current
+  status section above records the remaining work for a full physics assistant.

@@ -6,12 +6,18 @@ adapter uses the installed Magnus SDK and its existing connection configuration.
 It never invokes a shell, registers a blueprint, or executes `MAGNUS_ACTION`.
 
 Magnus tools are opt-in, so ordinary generation tasks keep their smaller tool list.
-For future LLM tasks, use `agent.py --enable-magnus`. Submission additionally needs
+For LLM tasks, use `agent.py --enable-magnus`. Submission additionally needs
 `--allow-simulation --validation-report validation.json`. The report is relative
 to the workspace and is read before the model starts. The operator must review
 it; the model cannot enable execution or replace that initial report during a task.
 Native parser-only validation is still unavailable. A report is evidence supplied
 by the operator, not proof produced by a new validation engine.
+
+Phase 4's offline CLI integration checks additionally cover the real
+LiteLLM/ADK path with a scripted provider and fake Magnus backend: reviewed
+submission in one session, then status/log queries and output retrieval in a
+fresh session without resubmission. They make no network calls and do not execute
+OPALX. See [offline integration checks](README.md#tests-and-traces).
 
 ## Use without Qwen
 
@@ -84,6 +90,9 @@ has the same operations as ADK tools: `inspect_opalx_backend`,
 Records are persisted under the workspace's `.magnus-jobs/`. General agent file
 tools cannot modify this directory. Only recorded job IDs can be inspected through
 this adapter; restarting the client with the same workspace reconnects to them.
+Agent invocations also write separate lifecycle summaries in `.agent-runs/`;
+the direct `magnus_cli.py` uses the job records and does not create agent-run
+summaries. An agent's `completed` status does not establish simulation success.
 Keep the workspace private and use the same configured Magnus backend when resuming.
 Avoid concurrent clients changing the same workspace.
 

@@ -1,7 +1,11 @@
-# Standalone agent: file tools and skill discovery
+# Standalone accelerator Python agent (v0.1)
 
 Phase 3 adds opt-in Magnus/OPALX tools and a direct, non-LLM CLI. See
 [Magnus usage](MAGNUS.md) for submission gates, job records, and examples.
+Phase 4 now provides validated model configuration, `--show-config`, persistent
+run summaries, correlated traces, and lifecycle error reporting. Phase 4 is
+complete for the roadmap's reusable-runtime scope, with offline integration
+checks described below. The full autonomous physics workflow remains incomplete.
 See [coder diagnostics](DIAGNOSTICS.md) for the small Ollama/LiteLLM/ADK comparison
 and the identified tool-history compatibility concern.
 
@@ -11,11 +15,16 @@ The design borrows ColliderAgent's separation of orchestration, prompts, and
 file tools, and its [skill structure](https://github.com/HET-AGI/ColliderAgent/blob/main/src/skills/feynrules-model-generator/SKILL.md):
 frontmatter descriptions, workflow instructions, and linked references. The
 read-only, progressive skill loader here is a new implementation for this project.
+Like [ColliderAgent's Python agent](https://github.com/HET-AGI/ColliderAgent/blob/main/python-agent/agent.py),
+the runtime uses `LiteLlm` → `LlmAgent` → registered tools → `InMemoryRunner`.
+ColliderAgent also exposes domain validation and analysis tools; those capabilities
+do not become available here merely by sharing its runner architecture.
 
 From the repository root:
 
 ```bash
 uv sync --locked
+.venv/bin/python python-agent/agent.py --show-config
 .venv/bin/python python-agent/agent.py 'Create notes.txt describing a FODO cell.'
 .venv/bin/python python-agent/agent.py 'Which skills can you use?' --trace discovery.jsonl
 ```
@@ -25,6 +34,33 @@ Use `--workspace output/my-task` for a separate workspace. Tools support UTF-8
 read/write/edit and immediate directory listing; writes overwrite existing files.
 No shell or Python execution tool is exposed. Skills, references, blueprints,
 and OPALX execution code are not modified by this implementation.
+
+## Current capabilities and missing functionality
+
+The first reusable runtime is implemented; a complete autonomous accelerator
+study still needs additional physics capabilities and workflow verification.
+
+| Capability | Current state |
+| --- | --- |
+| Model configuration, CLI, file tools, skill/reference loading | Implemented; real CLI/ADK/LiteLLM wiring checked offline. |
+| Run summaries, traces, progress, errors, request/loop limits | Implemented and checked with scripted success/failure cases. |
+| Lattice generation | Instructions and file-writing path implemented; successful complete model-generated OPALX input remains unverified. Scripted fixture writing does not establish physics generation. |
+| Validation and approval | Operator supplies reviewed evidence for submission. No standalone deterministic validation engine or native parser-only OPALX tool is exposed. Loading `lattice-validator` supplies instructions, not a validator implementation. |
+| Magnus/OPALX submission, status/logs, output retrieval | Implemented with opt-in gates and durable job records; fake-backend integration passes. The earlier direct real-backend smoke passed; reliable model-driven execution remains unverified. |
+| Scientific result analysis | Missing. `tools/result_tools.py` is a placeholder, with no exposed SDDS/HDF5 reader, optics/emittance analysis, or plotting tool. Downloading output is not analysis. |
+
+The crucial implementation follow-ups for an autonomous physics workflow are
+parser-only OPALX validation and its backend/tool integration, structured
+validation/review handling, and bounded result-reading/analysis tools. Input
+generation, validation, simulation, and analysis should continue as separate
+stages. Model-driven generation and execution need independent verification when
+live testing resumes. No successful full physics study is claimed by phase 4.
+
+Long-running chat persistence, context compaction, automatic repair/optimization,
+and internet retrieval are also absent. They are extensions to the current
+single-task design; session-history persistence differs from the job-ID reconnect
+support already present. Remote-provider/model compatibility remains subject to
+provider-specific live verification.
 
 ## Progressive skill loading
 
@@ -76,18 +112,59 @@ are duplicated from the existing skills.
 
 ## Model configuration
 
-Ollama must already be running. The default tag matches the installed
-`qwen3.5:4b-q4_K_M`; no server startup or model download is performed, and no Google
-or OpenAI API key is required. Overrides:
+The default is `ollama_chat/qwen3.5:2b`, with Ollama already running at
+`http://localhost:11434`. No server startup, model download, or API key is required
+for local Ollama. Existing environment overrides remain supported:
 
 ```bash
 export OLLAMA_API_BASE=http://localhost:11434
-export ACCELERATOR_AGENT_MODEL=ollama_chat/qwen3.5:4b-q4_K_M
+export ACCELERATOR_AGENT_MODEL=ollama_chat/qwen3.5:2b
 export ACCELERATOR_AGENT_TIMEOUT=300
 export ACCELERATOR_AGENT_MAX_TOKENS=2048
 export ACCELERATOR_AGENT_CONTEXT=16384
 export ACCELERATOR_AGENT_REASONING=none
 ```
+
+Switch models without changing agent code:
+
+```bash
+ACCELERATOR_AGENT_MODEL=ollama_chat/qwen2.5-coder:3b \
+.venv/bin/python python-agent/agent.py 'Create notes.txt containing HELLO, then read it back.'
+.venv/bin/python python-agent/agent.py --show-config
+```
+
+`--show-config` validates settings and prints JSON without requiring a task,
+creating a workspace, or calling a model. It prints the model, limits, applicable
+reasoning/context settings, and booleans indicating explicit endpoint/key
+configuration. Endpoint and credential values are omitted. The key flag describes
+only `ACCELERATOR_AGENT_API_KEY`; it does not inspect provider-native credentials.
+
+| Environment variable | Behavior |
+| --- | --- |
+| `ACCELERATOR_AGENT_MODEL` | Nonempty LiteLLM model identifier without whitespace; use an explicit provider prefix when switching providers. |
+| `ACCELERATOR_AGENT_API_BASE` | Optional HTTP(S) endpoint; takes precedence over `OLLAMA_API_BASE`. Credentials, query strings, and fragments in URLs are rejected. |
+| `OLLAMA_API_BASE` | Legacy endpoint override, used only for `ollama/` or `ollama_chat/` models; defaults to `http://localhost:11434`. |
+| `ACCELERATOR_AGENT_API_KEY` | Optional nonempty credential forwarded to LiteLLM. Otherwise LiteLLM uses its provider-native credential configuration. |
+| `ACCELERATOR_AGENT_TIMEOUT` | Finite positive seconds per model request; default `300`. |
+| `ACCELERATOR_AGENT_MAX_TOKENS` | Positive integer response limit; default `2048`. |
+| `ACCELERATOR_AGENT_CONTEXT` | Positive integer Ollama context size; default `16384`. Validated for all configurations, forwarded only to Ollama. |
+| `ACCELERATOR_AGENT_REASONING` | `none`, `minimal`, `low`, `medium`, `high`, or `xhigh`. Defaults to `none` for Ollama and is omitted for other providers unless explicitly set. |
+
+An empty explicitly set value is an error. Numeric and endpoint errors fail before
+LiteLLM construction. Temperature stays fixed at zero and automatic retries remain
+disabled. Validation checks configuration structure, not server availability,
+installed model tags, credentials, or a model's support for particular parameters.
+Reasoning values must also be supported by the selected provider/model.
+
+For another LiteLLM provider, set its model identifier and provider-native
+credentials, or supply the generic API key/endpoint overrides. Ollama context and
+the default reasoning setting are not sent to that provider; unset an explicit
+`ACCELERATOR_AGENT_REASONING` override if it should use provider defaults.
+Remote-provider argument construction and the real adapter's scripted tool round
+trip are covered offline; no remote-provider live test has been performed.
+Settings are read from the process environment, with no
+automatic `.env` loading. Python callers can use `ModelConfig.from_env(mapping)`
+and `create_model(config)`; the existing no-argument `create_model()` still works.
 
 Thinking remains disabled by default. In the installed LiteLLM Ollama adapter,
 `reasoning_effort="none"` maps to `think=false`; `low`, `medium`, or `high` maps
@@ -110,12 +187,72 @@ this environment. `uv.lock` pins exact versions. Step 2 adds no dependencies.
 
 ## Tests and traces
 
-Offline unit tests (the original live model test remains opt-in):
+The offline suite includes unit, scripted ADK/LiteLLM, and CLI subprocess checks.
+Use the explicit environment below to keep the original live model test disabled,
+even if `RUN_OLLAMA_SMOKE` was inherited from another shell task:
 
 ```bash
+timeout 180 env -u RUN_OLLAMA_SMOKE LITELLM_LOCAL_MODEL_COST_MAP=True \
 .venv/bin/python -m unittest discover -s tests/python_agent -v
+```
+
+Phase 4 completion check (2026-10-22): **77 offline tests passed, one live test
+skipped** (78 discovered; about eight seconds of test execution). Five new
+integration tests cover multiple model selectors, separate execution/reconnection
+sessions, provider failure, submission denial, and subprocess entrypoints.
+The suite ran outside the sandbox because of the previously observed ADK
+thread/event-loop stall. No live model, remote provider, Magnus, or OPALX requests
+were made for this completion step.
+
+Run only the final offline integration checks:
+
+```bash
+timeout 180 env -u RUN_OLLAMA_SMOKE LITELLM_LOCAL_MODEL_COST_MAP=True \
+.venv/bin/python -m unittest discover -s tests/python_agent -p test_integration.py -v
+```
+
+| Phase 4 acceptance criterion | Evidence |
+| --- | --- |
+| Switch models without agent-code edits | Validated environment configuration; actual adapter tool round trips for both local model identifiers and an OpenAI-compatible fixture identifier. All provider responses are scripted. |
+| Basic logging and durable run records | Unique summaries, UTC timing, usage/counts, correlated appended traces, and running/completed/failed/cancelled lifecycle tests. |
+| Consistent errors | Configuration/input/startup/session/model/cleanup/recording failures, redaction, request exhaustion, and preservation of original exceptions. |
+| Reusable CLI and workflow integration | Task-file invocation outside the repository directory, skill/reference retrieval, generated fixture write/read, fake reviewed submission, and a fresh session reconnecting without resubmission. |
+| Documentation and reproducible checks | Configuration/usage/error semantics, bounded offline suite, capability limits, and roadmap completion status documented. |
+
+[test_integration.py](../tests/python_agent/test_integration.py) replaces
+`LiteLLMClient.acompletion` with deterministic native provider responses, retaining
+the actual model factory, LiteLLM conversion, ADK runner, and tools. Network
+connections in the scripted CLI runs are rejected. Subprocess checks exercise the
+real entrypoint's help, configuration inspection, validation failure, and missing
+task-file behavior from a different working directory, with a 30-second limit per
+process. Magnus uses the existing fake backend; its synthetic input/review fixtures
+are not OPALX models or scientific validation evidence. These tests establish
+integration, not whether a real model can choose correct tools or physics syntax.
+
+Live checks remain separate and opt-in. The following command contacts Ollama:
+
+```bash
 RUN_OLLAMA_SMOKE=1 .venv/bin/python -m unittest discover -s tests/python_agent -v
 ```
+
+Phase 4 configuration verification (2026-10-22): 58 offline tests passed, including
+six configuration tests; one live test was skipped. The suite stalled inside the
+sandbox but passed outside it in about three seconds of test execution. Separate
+local Ollama file-tool tests passed for `qwen3.5:2b` (101 seconds, three model
+requests) and `qwen2.5-coder:3b` (119 seconds, four requests, including a redundant
+read). Both wrote exactly `TOOL_OK`, read it back, and returned final text. Each
+used a temporary workspace that was deleted afterward. Reproduce for either model:
+
+```bash
+RUN_OLLAMA_SMOKE=1 LITELLM_LOCAL_MODEL_COST_MAP=True \
+ACCELERATOR_AGENT_MODEL=ollama_chat/qwen2.5-coder:3b \
+ACCELERATOR_AGENT_TIMEOUT=180 ACCELERATOR_AGENT_MAX_TOKENS=128 \
+ACCELERATOR_AGENT_CONTEXT=8192 PYTHONPATH=tests/python_agent \
+.venv/bin/python -m unittest test_agent.OllamaSmokeTest -v
+```
+
+These results verify basic configuration and file-tool use. FODO generation,
+validation, and model-driven simulation were not tested by this change.
 
 Start with the small live skill-discovery smoke test:
 
@@ -141,9 +278,8 @@ attempt using the larger context/response defaults timed out at 300 seconds with
 no tool call; its report is in `output/python-agent/discovery-20261020T154205178564Z/`.
 These observations do not isolate the cause of the latency. CPU speed and larger
 contexts remain practical limitations; increase `ACCELERATOR_AGENT_TIMEOUT` if
-needed. The long FODO test has **not** been run, per the staged testing request.
-Autonomous reference following and complete generated lattice quality are still
-unverified live.
+needed. This historical discovery check preceded the later failed FODO attempts
+recorded in the roadmap. Successful complete lattice generation remains unverified.
 
 For the longer FODO generation smoke test, run separately when ready:
 
@@ -172,12 +308,14 @@ so you can inspect which skill, reference, query, and line range were accessed.
 The FODO mode permits 24 model requests, so CPU runtime can be substantial.
 
 For ordinary CLI tasks, `--trace trace.jsonl` enables the same append-only event
-logging within the workspace. Without it, no execution log is written.
+logging within the workspace. A compact run summary is always written, even
+without `--trace`; detailed event payloads remain opt-in.
 `--task-file path/to/request.md` reads an operator-supplied UTF-8 task instead of a
 positional string. The default request limit remains eight; use `--max-calls 24`
 for a generation task requiring more document retrieval. Model/connection errors
 and call-limit exhaustion exit nonzero. Tool failures are returned to the model.
-A successful exit means the model returned a final response; inspect tool results
+A successful exit means the model returned a final response, runner cleanup
+completed, and the run summary was written; inspect tool results
 and generated files before treating its scientific claims as established.
 
 The original Phase 1 live unit test uses a temporary directory and removes it;
@@ -186,6 +324,101 @@ These tool boundaries are application-level checks, not an OS sandbox. Use a
 private workspace without concurrent external writers that could race path checks.
 Python/library caches use their normal locations; the workspace boundary governs
 agent tools and optional trace output.
+
+## Run summaries and errors
+
+Each `run_task` invocation writes a unique
+`<workspace>/.agent-runs/<run_id>.json`, starting before configuration and model
+setup. Summaries have `schema_version: 1` and contain:
+
+- Run/session IDs, UTC start/end timestamps, elapsed seconds, status, and stage.
+- Safe model configuration, model name, request limit, and execution flags.
+- Attempted model-request count, emitted tool-call count, tool-error count, and
+  per-response token usage (unavailable counts remain null).
+- A structured terminal error and any additional runner-cleanup errors.
+
+Task text, final response text, and tool payloads are not copied into summary
+fields. `TaskResult` retains its existing response/tool/usage fields and adds
+`run_id` and the absolute `record_path`. Summaries are replaced atomically and
+updated at model-request and event checkpoints. The agent file tools and trace
+destinations cannot access the reserved `.agent-runs/` tree. Existing Magnus job
+records and submission gates keep their separate behavior.
+
+| Status | Meaning |
+| --- | --- |
+| `running` | Initialized; a terminal outcome has not been recorded. |
+| `completed` | Final text was returned, cleanup succeeded, and recording succeeded. Tool errors may still have occurred; inspect `tool_error_count` and optional trace. |
+| `failed` | Configuration, input, setup, execution, cleanup, or recording failed. |
+| `cancelled` | A caught cancellation or keyboard interrupt ended the run. |
+
+`completed` describes the agent lifecycle. It does not certify generated lattice
+syntax, physics correctness, or a successful simulation. Backend outcomes remain
+in the Magnus tool results and job records. A killed process, power loss, or
+unwritable filesystem may leave the last summary at `running`; records do not
+automatically resume tasks or jobs. If the workspace is invalid or initial record
+creation fails, no summary can be written and the CLI reports that limitation.
+
+Optional JSONL trace events keep their existing names and payload fields, adding
+`run_id`, UTC `timestamp`, and `elapsed_seconds`. Multiple runs can append to one
+trace and be grouped by run ID. Early setup failures may have an `error` event
+without a preceding `start`. Traces retain task text, tool arguments/results,
+and final responses. Environment values whose names end in `_API_KEY`, `_TOKEN`,
+`_SECRET`, or `_API_BASE` are redacted from recorded strings; HTTP(S) URLs are
+also removed from terminal error messages. This is targeted redaction, not a
+general filter for sensitive text in prompts, files, or tool results.
+
+Errors contain `type`, `category`, `stage`, and `message`. Stages distinguish
+configuration, task input, startup, session creation, execution, cleanup, and
+recording. Recognized timeouts, connection/authentication/rate-limit errors,
+request-limit exhaustion, and repeated tool calls have specific categories;
+other errors retain their exception type and lifecycle stage. Python callers
+receive the original exception with `run_record_path` and `run_error` attributes
+when a record was initialized. Cleanup or diagnostic-write failures do not
+replace an earlier exception; cleanup errors are saved separately, and recording
+failures are attached as exception notes.
+
+The CLI prints a concise error and record path on stderr. Exit codes are `0` for
+completion, `1` for runtime failure, `130` for a keyboard interrupt, and `2` for
+argument/config-inspection errors. Argument-parser failures and `--show-config`
+do not start a run or create records. `--quiet` hides progress but keeps summaries
+and terminal failure diagnostics. Successful final text remains on stdout.
+
+The existing CLI command creates records automatically:
+
+```bash
+.venv/bin/python python-agent/agent.py --workspace output/my-task \
+  --task-file request.md --trace trace.jsonl
+```
+
+Python callers can also use
+`run_task(None, workspace, task_file=Path("request.md"))`; task-file read errors
+are then included in the same lifecycle record.
+
+For programmatic use from the repository root:
+
+```python
+import asyncio
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path("python-agent").resolve()))
+from agent import run_task
+
+result = asyncio.run(run_task(
+    "Write notes.txt containing HELLO, then read it back.",
+    Path("output/my-task"), trace="trace.jsonl",
+))
+print(result.response)
+print(result.record_path)
+```
+
+Verification on 2026-10-22: 72 offline tests passed and one live Ollama test was
+skipped, including 14 new lifecycle tests. Scripted ADK models cover correlated
+traces, running/completed summaries, startup/session/input failures, timeout
+redaction, tool errors, record protection, cancellation, request limits, cleanup,
+and recording failures. The suite ran outside the sandbox because of the known
+sandboxed ADK test stall. No live model requests, FODO generation, validation, or
+simulations were performed for this change.
 
 ## Readable terminal progress
 
@@ -213,8 +446,8 @@ The final CLI response stays on stdout. Hide progress with:
 .venv/bin/python python-agent/agent.py --quiet 'List the available skills.'
 ```
 
-Python callers can use `run_task(..., progress=False)`. The existing trace format
-and trace option remain available. Already-running processes keep their original
+Python callers can use `run_task(..., progress=False)`. The trace option remains
+available, with additive run-ID and timing metadata. Already-running processes keep their original
 behavior; no restart is needed to let an existing FODO run finish.
 
 ## Avoiding repeated calls and diagnosing context growth

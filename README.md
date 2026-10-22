@@ -44,11 +44,13 @@ and data are shared across Python environments.
 
 ## Standalone Python agent
 
-The standalone Google ADK + LiteLLM CLI uses local Ollama Qwen3.5 4B,
-with workspace-confined file tools and read-only discovery of `src/skills/`:
+The standalone Google ADK + LiteLLM CLI defaults to local Ollama `qwen3.5:2b`,
+with configurable models, workspace-confined file tools, read-only skill loading,
+and persistent run summaries:
 
 ```bash
 uv sync --locked
+.venv/bin/python python-agent/agent.py --show-config
 .venv/bin/python python-agent/agent.py 'Create notes.txt describing a FODO cell.'
 ```
 
@@ -57,3 +59,11 @@ configuration, and the discovery and FODO generation smoke tests. Magnus and
 simulation execution are available through opt-in tools; see
 [Magnus usage](python-agent/MAGNUS.md) for operator-controlled submission and the
 direct CLI that runs without an LLM.
+
+Phase 4's reusable v0.1 runtime is complete and covered by offline integration
+checks. Native parser-only validation and scientific result-analysis tools are
+still missing, and successful complete model-generated lattices and reliable
+model-driven simulations remain unverified. See the
+[capability overview](python-agent/README.md#current-capabilities-and-missing-functionality)
+and [AI roadmap](docs/AI_roadmap.md) for the distinction between runtime completion
+and a complete autonomous physics workflow.

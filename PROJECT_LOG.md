@@ -116,4 +116,10 @@ Project Log
 	implement phase 3 of python-agent: magnus_tool, but live qwen test failed
 	change to qwen2.5:3b-codel model
 	experiment and update fodo.in generation test: all fail
+22.10.26:
+	Implement phase 4 of python-agent: reproducibility and configuration
+	Python-agent version 1 complete, but untested against small local qwen model: failed
+	Not implemented: parser-only OPALX validation, result_tools.py and live physics tests
+	Updated pull draft request for parser-only feature
+	Project planning and update slides for week 5
 	

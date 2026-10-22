@@ -14,9 +14,10 @@ from google.adk.runners import InMemoryRunner
 from google.adk.agents.run_config import RunConfig
 from google.genai import types
 
-from model_config import create_model
+from model_config import ModelConfig, create_model
 from tools.file_tools import WorkspaceFiles
-from tools.skill_tools import SkillLibrary
+from tools.skill_tools import DEFAULT_SKILLS_ROOT, SkillLibrary
+from run_records import RUN_DIRECTORY, RunRecord, diagnostic_message, utc_now
 from tools.magnus_tools import JOB_DIRECTORY, MagnusTools
 
 
@@ -27,6 +28,8 @@ class TaskResult:
     tool_results: list[dict] = field(default_factory=list)
     tool_requests: list[dict] = field(default_factory=list)
     model_usage: list[dict] = field(default_factory=list)
+    run_id: str = ""
+    record_path: str = ""
 
 
 class RepeatedToolCallError(RuntimeError):
@@ -255,17 +258,131 @@ class _Progress:
             self.show(f"Agent stopped: {self.short(data['message'])}")
 
 
-async def run_task(task: str, workspace: Path, max_calls: int = 8,
+async def run_task(task: str | None, workspace: Path, max_calls: int = 8,
                    trace: str | None = None, progress: bool = True,
                    enable_magnus: bool = False, allow_simulation: bool = False,
                    validation_report: str | None = None,
-                   require_file_output: bool = False) -> TaskResult:
-    if allow_simulation and (not enable_magnus or not validation_report):
-        raise ValueError('Simulation requires enable_magnus and validation_report')
+                   require_file_output: bool = False,
+                   task_file: Path | None = None) -> TaskResult:
+    # A record cannot be written until the workspace itself is safe and writable.
+    files = WorkspaceFiles(workspace, read_only_roots=(DEFAULT_SKILLS_ROOT,))
+    run = RunRecord(files, max_calls=max_calls, enable_magnus=enable_magnus,
+                    allow_simulation=allow_simulation, require_file_output=require_file_output)
     display = _Progress(progress)
+    run.runner = None
+    heartbeat = None
+    trace_file = None
+    primary = None
+    result = None
+
+    def record(kind, data):
+        if kind == "model_usage":
+            run.data["model_usage"].append(data)
+        elif kind == "tool_call":
+            run.data["tool_calls"] += 1
+        elif kind == "tool_result" and "error" in data["response"]:
+            run.data["tool_error_count"] += 1
+        run.data["model_requests"] = display.model_calls
+        data = run.redact(data)
+        display.record(kind, data)
+        if trace_file:
+            with trace_file.open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps({"event": kind, **data, "run_id": run.run_id,
+                                         "timestamp": utc_now(),
+                                         "elapsed_seconds": round(time.monotonic() - run.started, 3)},
+                                        ensure_ascii=False) + "\n")
+        run.save()
+
+    try:
+        # Validate trace paths against the same protected trees as the agent tools.
+        protected = WorkspaceFiles(workspace, read_only_roots=(DEFAULT_SKILLS_ROOT,
+                                    files.root / JOB_DIRECTORY, files.root / RUN_DIRECTORY))
+        trace_file = protected._path(trace) if trace else None
+        if trace_file:
+            trace_file.parent.mkdir(parents=True, exist_ok=True)
+        run.data["stage"] = "configuration"
+        config = ModelConfig.from_env()
+        run.data["configuration"] = config.summary()
+        run.data["model"] = config.model
+        if isinstance(max_calls, bool) or not isinstance(max_calls, int) or max_calls < 1:
+            raise ValueError("max_calls must be a positive integer")
+        if allow_simulation and (not enable_magnus or not validation_report):
+            raise ValueError('Simulation requires enable_magnus and validation_report')
+        run.data["stage"] = "task_input"
+        if task_file is not None:
+            if task is not None:
+                raise ValueError("Provide exactly one task or task_file")
+            task = task_file.read_text(encoding="utf-8")
+        if not isinstance(task, str) or not task.strip():
+            raise ValueError("Task must be nonempty text")
+        run.data["stage"] = "startup"
+        record("start", {"task": task, "model": config.model, "max_calls": max_calls})
+        display.show(f"Workspace: {files.root}")
+        display.show(f"Run record: {run.path}")
+        if progress:
+            heartbeat = asyncio.create_task(display.heartbeat())
+        result = await _execute_task(task, workspace, max_calls, enable_magnus,
+                                     allow_simulation, validation_report, require_file_output,
+                                     config, run, display, record)
+    except BaseException as exc:
+        primary = exc
+        failure = run.error(exc, run.data["stage"])
+    finally:
+        if heartbeat is not None:
+            heartbeat.cancel()
+            await asyncio.gather(heartbeat, return_exceptions=True)
+        if run.runner is not None:
+            try:
+                await run.runner.close()
+            except BaseException as exc:
+                cleanup = run.error(exc, "cleanup")
+                run.data["cleanup_errors"].append(cleanup)
+                if primary is None:
+                    primary, failure = exc, cleanup
+        run.data["model_requests"] = display.model_calls
+
+    if primary is not None:
+        # Keep the original Python exception even if diagnostics cannot be written.
+        run.data["stage"] = failure["stage"]
+        primary.run_record_path = str(run.path)
+        primary.run_error = failure
+        try:
+            record("error", failure)
+        except Exception as exc:
+            primary.add_note("Could not append error trace: " + run.error(exc, "recording")["message"])
+        try:
+            run.finish(failure)
+        except Exception as exc:
+            primary.add_note("Could not finalize run record: " + run.error(exc, "recording")["message"])
+            display.show("Could not finalize run record; its status may still be running.")
+        raise primary
+    # Completion is recorded only after runner cleanup succeeds.
+    run.data["stage"] = "completed"
+    try:
+        run.finish()
+        record("final", {"response": result.response})
+    except Exception as exc:
+        failure = run.error(exc, "recording")
+        run.data["stage"] = "recording"
+        exc.run_record_path, exc.run_error = str(run.path), failure
+        try:
+            run.finish(failure)
+        except Exception as write_error:
+            exc.add_note("Could not finalize run record: " + run.error(write_error, "recording")["message"])
+        try:
+            record("error", failure)
+        except Exception as write_error:
+            exc.add_note("Could not append error trace: " + run.error(write_error, "recording")["message"])
+        raise
+    return result
+
+
+async def _execute_task(task, workspace, max_calls, enable_magnus, allow_simulation,
+                        validation_report, require_file_output, config, run, display, record):
     library = SkillLibrary()
     files = WorkspaceFiles(workspace, read_only_roots=(library.root,
-                           workspace.expanduser().resolve() / JOB_DIRECTORY))
+                           workspace.expanduser().resolve() / JOB_DIRECTORY,
+                           workspace.expanduser().resolve() / RUN_DIRECTORY))
     tools = [files.read_file, files.write_file, files.edit_file, files.list_files,
              library.list_skills, library.load_skill, library.read_skill_document]
     instruction = (Path(__file__).parent / "prompts" / "sytem.md").read_text()
@@ -275,18 +392,14 @@ async def run_task(task: str, workspace: Path, max_calls: int = 8,
         tools.extend([magnus.inspect_opalx_backend, magnus.inspect_simulation_input,
                       magnus.submit_opalx_simulation, magnus.get_opalx_job_status,
                       magnus.read_opalx_job_logs, magnus.retrieve_opalx_outputs])
-    trace_file = files._path(trace) if trace else None
-    if trace_file:
-        trace_file.parent.mkdir(parents=True, exist_ok=True)
-    result = TaskResult()
+    result = TaskResult(run_id=run.run_id, record_path=str(run.path))
     guard = _ToolLoopGuard()
     handoff = _SkillHandoff(require_file_output)
 
-    def record(kind: str, data: dict):
-        display.record(kind, data)
-        if trace_file:
-            with trace_file.open("a", encoding="utf-8") as stream:
-                stream.write(json.dumps({"event": kind, **data}, ensure_ascii=False) + "\n")
+    def before_model(callback_context, llm_request):
+        display.before_model(callback_context, llm_request)
+        run.data["model_requests"] = display.model_calls
+        run.save()
 
     def after_model(callback_context, llm_response):
         display.after_model(callback_context, llm_response)
@@ -309,76 +422,67 @@ async def run_task(task: str, workspace: Path, max_calls: int = 8,
 
     agent = LlmAgent(
         name="accelerator_agent",
-        model=create_model(),
+        model=create_model(config),
         # A provider preserves literal braces in operator paths/JSON: ADK must
         # not interpret them as session-state placeholders.
         instruction=lambda ctx: instruction,
         tools=tools,
-        before_model_callback=[display.before_model, handoff.before_model],
+        before_model_callback=[before_model, handoff.before_model],
         after_model_callback=after_model,
         before_tool_callback=guard.before_tool,
         after_tool_callback=handoff.after_tool,
     )
     runner = InMemoryRunner(agent=agent, app_name="accelerator_agent")
-    heartbeat = None
-    try:
-        record("start", {"task": task, "model": str(agent.model.model), "max_calls": max_calls})
-        display.show(f"Workspace: {files.root}")
-        if progress:
-            heartbeat = asyncio.create_task(display.heartbeat())
-        session = await runner.session_service.create_session(
-            app_name="accelerator_agent", user_id="local"
+    run.runner = runner
+    run.data["model"] = str(agent.model.model)
+    run.data["stage"] = "session"
+    session = await runner.session_service.create_session(
+        app_name="accelerator_agent", user_id="local"
+    )
+    run.data["session_id"] = session.id
+    run.data["stage"] = "execution"
+    run.save()
+    message = task
+    for attempt in range(2):
+        result.response = ""
+        async for event in runner.run_async(
+            user_id="local", session_id=session.id,
+            new_message=types.Content(role="user", parts=[types.Part(text=message)]),
+            run_config=RunConfig(max_llm_calls=max_calls - display.model_calls),
+        ):
+            if event.error_code:
+                raise RuntimeError(event.error_message or event.error_code)
+            for call in event.get_function_calls():
+                result.tool_calls.append(call.name)
+                request = {"name": call.name, "args": call.args or {}}
+                result.tool_requests.append(request)
+                record("tool_call", request)
+            for response in event.get_function_responses():
+                entry = {"name": response.name, "response": response.response}
+                result.tool_results.append(entry)
+                record("tool_result", entry)
+            if event.is_final_response() and event.content:
+                result.response = "\n".join(
+                    part.text for part in event.content.parts or []
+                    if part.text and not part.thought
+                )
+        if not require_file_output or handoff.file_written:
+            break
+        if attempt == 1 or display.model_calls >= max_calls:
+            raise RuntimeError("File-generation task ended without a successful nonempty file write")
+        record("continuation", {"reason": "No successful nonempty file write", "attempt": 1,
+                                "response": result.response})
+        display.show("No generated file; continuing once within the remaining model-request budget.")
+        message = (
+            "The original file-generation task is unfinished: no successful nonempty "
+            "workspace file write was recorded. Continue from the existing skill/reference "
+            "results. Retrieve missing relevant sections, then write the requested files. "
+            "Do not restart discovery or reload skills. If blocked, explain the specific "
+            "reason; do not invent syntax. This is the only automatic continuation."
         )
-        message = task
-        for attempt in range(2):
-            result.response = ""
-            async for event in runner.run_async(
-                user_id="local", session_id=session.id,
-                new_message=types.Content(role="user", parts=[types.Part(text=message)]),
-                run_config=RunConfig(max_llm_calls=max_calls - display.model_calls),
-            ):
-                if event.error_code:
-                    raise RuntimeError(event.error_message or event.error_code)
-                for call in event.get_function_calls():
-                    result.tool_calls.append(call.name)
-                    request = {"name": call.name, "args": call.args or {}}
-                    result.tool_requests.append(request)
-                    record("tool_call", request)
-                for response in event.get_function_responses():
-                    entry = {"name": response.name, "response": response.response}
-                    result.tool_results.append(entry)
-                    record("tool_result", entry)
-                if event.is_final_response() and event.content:
-                    result.response = "\n".join(
-                        part.text for part in event.content.parts or []
-                        if part.text and not part.thought
-                    )
-            if not require_file_output or handoff.file_written:
-                break
-            if attempt == 1 or display.model_calls >= max_calls:
-                raise RuntimeError("File-generation task ended without a successful nonempty file write")
-            record("continuation", {"reason": "No successful nonempty file write", "attempt": 1,
-                                    "response": result.response})
-            display.show("No generated file; continuing once within the remaining model-request budget.")
-            message = (
-                "The original file-generation task is unfinished: no successful nonempty "
-                "workspace file write was recorded. Continue from the existing skill/reference "
-                "results. Retrieve missing relevant sections, then write the requested files. "
-                "Do not restart discovery or reload skills. If blocked, explain the specific "
-                "reason; do not invent syntax. This is the only automatic continuation."
-            )
-        if not result.response:
-            raise RuntimeError("Model returned no final text response")
-        record("final", {"response": result.response})
-        return result
-    except BaseException as exc:
-        record("error", {"type": type(exc).__name__, "message": str(exc)})
-        raise
-    finally:
-        if heartbeat is not None:
-            heartbeat.cancel()
-            await asyncio.gather(heartbeat, return_exceptions=True)
-        await runner.close()
+    if not result.response:
+        raise RuntimeError("Model returned no final text response")
+    return result
 
 
 def main() -> int:
@@ -389,10 +493,17 @@ def main() -> int:
     parser.add_argument("--max-calls", type=int, default=8)
     parser.add_argument("--trace", help="Append JSONL tool calls/results to a workspace-relative file")
     parser.add_argument("--quiet", action="store_true", help="Hide progress messages on stderr")
+    parser.add_argument("--show-config", action="store_true", help="Validate and print model settings without calling a model")
     parser.add_argument('--enable-magnus', action='store_true', help='Expose Magnus tools')
     parser.add_argument('--allow-simulation', action='store_true', help='Allow reviewed input submission')
     parser.add_argument('--validation-report', help='Operator PASS report, relative to workspace')
     args = parser.parse_args()
+    if args.show_config:
+        try:
+            print(json.dumps(ModelConfig.from_env().summary(), indent=2))
+        except ValueError as exc:
+            parser.error(str(exc))
+        return 0
     if args.max_calls < 1:
         parser.error("--max-calls must be positive")
     if bool(args.task) == bool(args.task_file):
@@ -400,14 +511,23 @@ def main() -> int:
     if args.allow_simulation and (not args.enable_magnus or not args.validation_report):
         parser.error('--allow-simulation requires --enable-magnus and --validation-report')
     try:
-        task = args.task_file.read_text(encoding="utf-8") if args.task_file else args.task
-        result = asyncio.run(run_task(task, args.workspace, args.max_calls, args.trace,
+        result = asyncio.run(run_task(args.task, args.workspace, args.max_calls, args.trace,
                                      progress=not args.quiet, enable_magnus=args.enable_magnus,
                                      allow_simulation=args.allow_simulation,
-                                     validation_report=args.validation_report))
+                                     validation_report=args.validation_report,
+                                     task_file=args.task_file))
     except (Exception, KeyboardInterrupt) as exc:
-        print(f"Agent failed: {exc}", file=sys.stderr)
-        return 1
+        error = getattr(exc, "run_error", None)
+        if error:
+            print(f"Agent failed [{error['category']}/{error['type']}]: {error['message']}", file=sys.stderr)
+        else:
+            print(f"Agent failed [{type(exc).__name__}]: {diagnostic_message(exc)}", file=sys.stderr)
+            print("Run record unavailable: workspace or record initialization failed.", file=sys.stderr)
+        for note in getattr(exc, '__notes__', []):
+            print(diagnostic_message(note), file=sys.stderr)
+        if getattr(exc, "run_record_path", None):
+            print(f"Run record: {exc.run_record_path}", file=sys.stderr)
+        return 130 if isinstance(exc, KeyboardInterrupt) else 1
     print(result.response)
     return 0
 
