@@ -17,7 +17,7 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
 3. [x] Discover files in `readers/discovery.py`: support absent outputs, multiple
    candidates and explicit selection. Separate inputs and derived artifacts;
    inventory unsupported files (including JSON) without interpreting them.
-4. [ ] Read the observed ASCII SDDS `.stat` format and selected HDF5 snapshots.
+4. [x] Read the observed ASCII SDDS `.stat` format and selected HDF5 snapshots.
    Preserve header parameters, column types, descriptions, units and attributes.
    Sort snapshot IDs numerically; avoid loading every snapshot at once. Retain
    timing.dat as raw execution metadata initially. Reject unsupported variants.
@@ -52,19 +52,39 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
   `analysis`/`plots` directories are derived (configurable with
   `derived_directories`). JSON, auxiliary outputs and symlinks stay unhandled;
   symlink directories are not traversed. No basename pairing is assumed.
+- Reader API (from `postprocess.readers`): `read_stat(path)`,
+  `list_snapshots(path)`, `read_snapshot(path, step)` and `read_timing(path)`.
+  Pass `files.root / select_file(files, kind)` after checking for absent outputs.
+- Statistics support the observed ASCII, row-oriented `no_row_counts=1` layout,
+  numeric columns and one parameter per line. Preserve original SDDS definitions
+  under `source.attributes['sdds_header']`; other unsupported layouts fail clearly.
+- HDF5 reads one flat `Step#N` dump at a time and closes handles before returning.
+  Original file/dataset attributes are retained under `file_attributes` and
+  `dataset_attributes` in snapshot source attributes; group attributes stay at
+  the top level. Nested/linked particle datasets are unsupported. Known SPOS/TIME
+  units are converted to m/s; unknown units leave convenience coordinates unset.
+- `TimingData` retains UTF-8 text verbatim, including line endings and repeated
+  timer labels. Timing is optional execution metadata, never evidence of physics
+  validity or run success. Do not flatten multiple tables or assume missing units;
+  structured timing analysis remains deferred.
 
 ## Verification and limits
 
 - Step 1: focused unittest checks cover structural errors, integer IDs, unknown
   metadata, covariance metadata, independent defaults and explicit failed results.
-  All 7 model tests passed on 2026-10-26; numerical calculations and diagnostic
-  parsing are not implemented or tested yet.
+  All 7 model tests passed on 2026-10-26; numerical calculations remain pending.
   Run with `PYTHONPATH=src .venv/bin/python -m unittest discover -s tests/postprocess -v`
   until packaging is enabled.
 - Step 3: all 14 model/discovery tests passed on 2026-10-26. Discovery tests
   cover missing/ambiguous outputs, explicit paths, classification, recursion,
   ordering, symlinks and traversal errors. A read-only FODO inventory check
   identified the expected `.stat`, `.h5`, `timing.dat`, input and derived report.
+- Step 4: all 28 tests passed, including synthetic malformed/unsupported inputs,
+  integer precision, metadata preservation, empty/nonfinite data, selective HDF5
+  reads, closed handles, coordinate conversions and verbatim timing text. The
+  local FODO integration test passed: 47 statistics columns, 1087 rows, 11 dumps,
+  10000 particles in first/last dumps, and consistent final stored time/path.
+  It skips when local FODO outputs are absent. No simulation was launched.
 - FODO reference: `output/opalx-simulator/fodo-no-spacecharge`; `.stat` time is
   ns, HDF5 time is s; 11 particle snapshots. Verify reported attribute semantics
   before using them as numerical reference values.

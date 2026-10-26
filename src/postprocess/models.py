@@ -56,6 +56,14 @@ class RunFiles:
     unhandled: list[Path] = field(default_factory=list)
 
 
+@dataclass
+class TimingData:
+    """Optional execution metadata, retaining timing.dat verbatim without parsing."""
+
+    source: SourceMetadata
+    text: str
+
+
 def _check_columns(columns: dict[str, NumericArray]) -> None:
     """Require equally sized 1D real numeric arrays; allow empty/nonfinite data."""
     lengths = set()
