@@ -122,4 +122,9 @@ Project Log
 	Not implemented: parser-only OPALX validation, result_tools.py and live physics tests
 	Updated pull draft request for parser-only feature
 	Project planning and update slides for week 5
-	
+26.10.26:
+	Do my validation of dba cof run manually with opalx
+	Do some plots of the results
+	Create a study plan for accelerator physics
+	Start watching a lecture: Transverse beam dynamics 1
+	Create first modules pf postprocess python lib
