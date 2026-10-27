@@ -77,8 +77,81 @@ means geometric optics was not requested. Read status/issues before using values
 
 `.stat` contains reported summaries and cannot reconstruct a full particle
 covariance. Calculations here consume HDF5 snapshots; reported diagnostics stay
-separate. General validation, exports, longitudinal Twiss, eigenemittances and
-charge-weighted moments remain roadmap items.
+separate. Exports, longitudinal Twiss, eigenemittances and charge-weighted moments
+remain roadmap items.
+
+## Validation
+
+Validation is a separate, nonmutating stage. Reports contain `issues` with
+severity/code/source/step/field, `checks` describing performed checks, and
+`skipped` explaining unavailable comparisons. `report.is_valid` means no errors
+were found within those checks; warnings and skips remain visible. It does not
+establish that the simulation completed, that the physics model is appropriate,
+or that every output format was supported. Reader exceptions still indicate
+unreadable or unsupported file formats before this stage.
+
+```python
+from postprocess import (
+    validate_run_files, validate_snapshot, validate_statistics,
+    validate_analysis, compare_diagnostics,
+)
+from postprocess.readers import discover_run, read_stat
+
+files = discover_run("output/opalx-simulator/fodo-no-spacecharge")
+file_report = validate_run_files(files)
+input_report = validate_snapshot(snapshot, longitudinal_axis="z")
+calculation_report = validate_analysis(result, longitudinal_axis="z")
+table = read_stat(files.root / files.statistics[0])  # This fixture has one .stat.
+statistics_report = validate_statistics(table)
+comparison_report = compare_diagnostics(
+    snapshot, result, table,
+    frame_confirmed=True,  # Explicitly verified for this straight FODO fixture.
+)
+```
+
+- `validate_run_files` requires statistics and snapshot files by default; pass
+  `required=('statistics',)` for a statistics-only run. Multiple candidates warn;
+  use discovery's `select_file` to resolve ambiguity before reading. Empty or
+  missing requested files error. Timing is optional; `validate_timing` checks
+  text availability without interpreting timing numbers or inferring success.
+- `validate_snapshot` checks all numeric arrays, six required phase-space fields,
+  dimensions, empty/nonfinite data, units/conventions, finite time/path, unique
+  integer IDs, positive masses when present, species and macroparticle charges.
+  Forward pz is required only when requesting `longitudinal_axis='z'`.
+- `validate_statistics` requires t, s and numParticles by default (customizable).
+  It checks nonnegative integral counts, nonnegative RMS/emittance/energy/spread
+  values, bounded correlations, and time ordering. Decreasing/repeated times
+  warn, allowing restart histories to be inspected; path need not increase and
+  particle/energy conservation is not assumed.
+- `validate_analysis` copies calculation issues, checks requested completeness,
+  status, finite scalar observables, units, covariance symmetry/positive
+  semidefiniteness, RMS/variance, projected/full covariance agreement, emittance
+  determinants and Twiss relations. Singular positive-semidefinite covariance
+  is valid. Pass the same longitudinal-axis argument as calculation to check
+  geometric/Twiss completeness. These are consistency checks, not an independent
+  recomputation of every observable.
+- `compare_diagnostics` requires the result's source and step to match the
+  snapshot. Without `frame_confirmed=True`, it explicitly skips comparisons.
+  Confirmation covers compatible position/momentum frames and population/weight
+  conventions; the library cannot infer those for arbitrary lattices/monitors.
+  It checks HDF5 centroid/RMS/normalized-emittance attributes and available
+  statistics counts, centroids, RMS and normalized emittances. Unknown units are
+  skipped with warnings: a statistics momentum unit `1` alone does not establish
+  p/(mc). Reported geometric emittance is skipped because the estimator differs.
+
+Default consistency/comparison tolerances are rtol=1e-8 and atol=1e-12 in each
+observable's stated canonical units. Covariance symmetry/PSD and determinant
+checks use dimensionless correlation scaling; tiny mixed-unit entries must not
+hide an invalid covariance. The Twiss identity uses a scaled residual for nearly
+singular ellipses. These tolerances are configurable; emittance determinant checks
+cannot resolve differences below covariance roundoff in nearly singular cases.
+
+Statistics comparison requires exactly one row within `time_atol=1e-15` seconds;
+there is no nearest-row fallback or interpolation. Where both paths are present,
+they must agree within `path_atol=1e-6` metres. A missing path is an explicit skip
+and leaves time-only matching; an unknown/inconsistent path blocks comparisons.
+When the clocks differ or tables combine restarts, resolve that alignment before
+comparing. No rows, fields, attributes or calculation statuses are repaired.
 
 ## Reference checks
 

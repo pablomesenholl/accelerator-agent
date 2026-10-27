@@ -142,6 +142,23 @@ class ValidationIssue:
 
 
 @dataclass
+class ValidationReport:
+    """Outcome relative to the checks performed, without repairing input data.
+
+    is_valid means no error was found, not that all checks ran, that warnings
+    are absent, or that simulation succeeded. Inspect checks and skipped too.
+    """
+
+    issues: list[ValidationIssue] = field(default_factory=list)
+    checks: list[str] = field(default_factory=list)
+    skipped: list[str] = field(default_factory=list)
+
+    @property
+    def is_valid(self) -> bool:
+        return not any(issue.severity == "error" for issue in self.issues)
+
+
+@dataclass
 class Quantity:
     """Calculated scalar or array, with unit and mathematical definition."""
 
@@ -181,7 +198,7 @@ class AnalysisResult:
     Failed observables are omitted and explained by issues. Zero emittance can
     be valid but cannot represent failure. partial means some requested values
     failed; failed means none could be computed. Assumptions describe weighting,
-    frames and approximations. Future validation must check status consistency.
+    frames and approximations. validate_analysis checks status consistency.
     """
 
     source: SourceMetadata

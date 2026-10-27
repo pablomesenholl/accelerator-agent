@@ -25,10 +25,10 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
    transverse normalized/geometric emittances and Twiss parameters. Start with
    equal particle weighting; document it and flag unequal charges. Verify frames
    and p/(mc) versus slope conventions before deriving geometric quantities.
-6. [ ] Validate required fields, empty data, dimensions, nonfinite/nonphysical
+6. [x] Validate required fields, empty data, dimensions, nonfinite/nonphysical
    values and singular calculations. Report errors with source context; compare
    reported and calculated diagnostics only at matched coordinates/conventions.
-   Calculation-local guards/issues exist; general validation remains pending.
+   Separate validators report performed/skipped checks without repairing data.
 7. [ ] Expose a small public API, JSON-compatible summaries and CSV statistics;
    keep arrays directly available for plotting. Include units and assumptions.
 8. [ ] Complete synthetic numerical/error tests and a local FODO integration
@@ -83,6 +83,22 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
 - See `README.md` for metric choices, formulas, units, result names, numerical
   limits and pinned OPALX source references. Per-particle slope emittance can
   differ from OPALX's reported mean-beta-gamma geometric estimator.
+- Validation API: `validate_run_files`, `validate_statistics`,
+  `validate_snapshot`, `validate_timing`, `validate_analysis` and
+  `compare_diagnostics`, exported from `postprocess`. `ValidationReport` contains
+  contextual issues, performed checks, explicit skips and an `is_valid` property
+  meaning no errors in performed checks, not simulation success/completeness.
+- Input checks cover required outputs/fields, dimensions, finite values, counts,
+  physical ranges, IDs and units/weight conventions. Result checks cover status,
+  completeness, finite scalar values, covariance symmetry/PSD in correlation
+  units, projected/full covariance, RMS/emittance and Twiss consistency.
+- Reported comparisons require matching result provenance and explicit
+  `frame_confirmed=True` for compatible frames/populations. Statistics require a
+  unique time match and path agreement when available. Unknown units are skipped
+  visibly; dimensionless statistics momentum labels alone do not establish
+  normalization. Differing geometric emittance estimators are not compared.
+- Timing remains optional text metadata. Validation neither filters particles,
+  rewrites reported centroids, changes calculation status nor infers run success.
 
 ## Verification and limits
 
@@ -109,10 +125,20 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
   attributes and time-matched `.stat` rows at relative tolerance 1e-12. Geometric
   optics satisfies the Twiss identity and is independently checked analytically.
   No simulations or dependency changes; packaging remains deferred.
+- Step 6 (2026-10-27): all 64 tests passed. Added file/data/physics-range checks,
+  covariance PSD and scaling, result completeness/status/units, RMS/emittance/
+  Twiss consistency, unknown metadata and unique time/path matching tests.
+  Across all 11 FODO snapshots, input/calculation checks pass; diagnostic
+  comparison flags exactly the three known HDF5 centroid metadata errors per
+  snapshot while time-matched statistics values pass. Comparisons preserve all
+  source metadata. Local integration checks skip if outputs are absent.
 - Reference-data caveat: FODO's HDF5 `centroid` attribute differs from the means
   of its stored x/y/z datasets. Recomputed centroids agree with time-matched
   `.stat` mean columns. Preserve the upstream metadata without using it as a
   centroid reference; no simulation/framework files were changed.
+  Diagnosis at the recorded OPALX revision: the writer takes the first three of
+  six unnormalized interleaved sums, writing sum(x), sum(px), sum(y). Updating
+  the OPALX image and fixing its writer remain separate work.
 - FODO reference: `output/opalx-simulator/fodo-no-spacecharge`; `.stat` time is
   ns, HDF5 time is s; 11 particle snapshots. Verify reported attribute semantics
   before using them as numerical reference values.
