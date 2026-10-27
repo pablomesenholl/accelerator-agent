@@ -1,0 +1,17 @@
+{
+  "description": "Existing straight, no-space-charge FODO outputs; centroid metadata has a diagnosed upstream writer defect.",
+  "files": {
+    "FODO-no-spacecharge.stat": "9a65fc621a8e5d5beb07cbecde38ab6c646416ba07897dd44e6aebf11b48c96d",
+    "FODO-no-spacecharge.h5": "a1f175e5a7d55099bc0c74fc6a6487eb16500c1440dc5a25d93ad07f9f6de4d2"
+  },
+  "statistics_rows": 1087,
+  "statistics_columns": 47,
+  "snapshot_steps": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  "particles_per_snapshot": 10000,
+  "known_centroid_bug_revision": "33d444649e3379b08c4610290d948fa2a4f39c93",
+  "expected_max_relative_normalized_emittance_change": {
+    "x": 0.00029554912363027874,
+    "y": 0.0015226905505529853
+  },
+  "max_relative_energy_change": 1e-10
+}

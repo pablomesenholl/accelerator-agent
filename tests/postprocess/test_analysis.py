@@ -25,6 +25,41 @@ def snapshot():
 
 
 class AnalysisTests(unittest.TestCase):
+    def test_full_coupled_covariance_from_orthogonal_population(self):
+        # Six zero-mean orthogonal columns with exact population variance 1.
+        u, v, w = np.array(np.meshgrid([-1., 1.], [-1., 1.], [-1., 1.])).reshape(3, -1)
+        basis = np.column_stack((u, v, w, u*v, u*w, v*w))
+        transform = np.diag([.002, .0003, .003, .0004, .005, .01])
+        transform[0, 2], transform[3, 1], transform[4, 0] = .001, .0002, .002
+        means = np.array([.01, .001, -.02, -.001, .03, 2.])
+        population = basis @ transform.T + means
+        axes = ("x", "px", "y", "py", "z", "pz")
+        data = snapshot()
+        data.columns = {name: population[:, i] for i, name in enumerate(axes)}
+        result = analyze_snapshot(data, longitudinal_axis="z")
+        expected = transform @ transform.T
+        np.testing.assert_allclose(result.covariances["phase_space"].values, expected, rtol=1e-12, atol=1e-18)
+        for i, name in enumerate(axes):
+            self.assertAlmostEqual(result.quantities[f"centroid_{name}"].value, means[i])
+        for plane, start in (("x", 0), ("y", 2)):
+            block = expected[start:start+2, start:start+2]
+            np.testing.assert_allclose(result.quantities[f"emit_n{plane}"].value,
+                                       np.sqrt(np.linalg.det(block)), rtol=1e-12)
+
+    def test_linear_drift_preserves_emittance_and_transports_twiss(self):
+        data = snapshot()
+        before = analyze_snapshot(data, longitudinal_axis="z")
+        length = .75
+        for plane in ("x", "y"):
+            data.columns[plane] += length * data.columns["p" + plane] / data.columns["pz"]
+        after = analyze_snapshot(data, longitudinal_axis="z")
+        for plane in ("x", "y"):
+            a, b, g = (before.quantities[f"{name}_{plane}"].value for name in ("alpha", "beta", "gamma"))
+            for name, expected in (("alpha", a-length*g), ("beta", b-2*length*a+length**2*g), ("gamma", g)):
+                self.assertAlmostEqual(after.quantities[f"{name}_{plane}"].value, expected)
+            for key in (f"emit_n{plane}", f"emit_{plane}"):
+                self.assertAlmostEqual(after.quantities[key].value, before.quantities[key].value)
+
     def test_known_moments_emittances_twiss_and_covariance_order(self):
         result = analyze_snapshot(snapshot(), longitudinal_axis="z")
         self.assertEqual(result.status, "success")

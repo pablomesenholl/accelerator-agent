@@ -21,6 +21,18 @@ SciPy, pandas, matplotlib, and h5py. Python is downloaded if needed.
 commit these files rather than `.venv`, which is already ignored by Git.
 The lockfile records exact dependency versions for subsequent installations.
 
+The project is installed as an editable package by `uv sync --locked`, exposing
+the `postprocess` library to the agent's project interpreter:
+
+```bash
+.venv/bin/python -c "import postprocess; print(postprocess.__file__)"
+```
+
+No `PYTHONPATH` setting is needed. See [postprocessing usage](src/postprocess/README.md)
+for readers, calculations, validation, plotting adapters and exports. Development
+acceptance checks live under `tests/postprocess/`; `scripts/` holds workflow
+runners such as the Magnus simulation runner.
+
 The SDK connects to the existing Magnus backend using your Magnus configuration:
 
 ```bash

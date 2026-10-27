@@ -9,11 +9,10 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
 1. [x] Define data contracts in `models.py`: dataclasses containing NumPy arrays,
    explicit units, coordinates, provenance, reported metadata, calculation status
    and validation issues. Preserve integer particle IDs and unknown conventions.
-2. [ ] **Deferred at user request.** Enable packaging in `pyproject.toml`: remove
-   `package = false`, add a setuptools build backend and restrict discovery to
-   `postprocess` packages.
-   Refresh the lockfile and verify imports after sync. `readers/__init__.py`
-   already exists for discovery imports.
+2. [x] Enable packaging in `pyproject.toml`: setuptools builds only `postprocess`
+   and its subpackages. The lockfile records the project as editable; runtime
+   dependency versions are unchanged. The package is installed in `.venv` and
+   imports without `PYTHONPATH`, including from outside the repository.
 3. [x] Discover files in `readers/discovery.py`: support absent outputs, multiple
    candidates and explicit selection. Separate inputs and derived artifacts;
    inventory unsupported files (including JSON) without interpreting them.
@@ -31,13 +30,13 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
    Separate validators report performed/skipped checks without repairing data.
 7. [x] Expose a small public API, JSON-compatible summaries and CSV statistics;
    keep arrays directly available for plotting. Include units and assumptions.
-8. [ ] Complete synthetic numerical/error tests and a local FODO integration
+8. [x] Complete synthetic numerical/error tests and a local FODO integration
    check; document supported formats and formulas. Do not launch simulations.
 
 ## Data contract decisions
 
 - Dataclasses group numerical arrays and metadata; no pandas dependency in the
-  contract. A DataFrame adapter can be added later for tabular consumers.
+  contract. DataFrame adapters at the export boundary support tabular consumers.
 - Arrays are mutable and shared, with no implicit dtype or unit conversion.
   Constructors check structure; physical validation remains a separate stage.
 - Statistics preserve source units. Snapshot path length/time are metres/seconds
@@ -120,8 +119,7 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
 - Step 1: focused unittest checks cover structural errors, integer IDs, unknown
   metadata, covariance metadata, independent defaults and explicit failed results.
   All 7 model tests passed on 2026-10-26.
-  Run with `PYTHONPATH=src .venv/bin/python -m unittest discover -s tests/postprocess -v`
-  until packaging is enabled.
+  Run with `.venv/bin/python -m unittest discover -s tests/postprocess -v`.
 - Step 3: all 14 model/discovery tests passed on 2026-10-26. Discovery tests
   cover missing/ambiguous outputs, explicit paths, classification, recursion,
   ordering, symlinks and traversal errors. A read-only FODO inventory check
@@ -154,8 +152,31 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
   Local FODO export integration passes for all 11 calculated snapshots and 1087
   statistics rows. A separate headless smoke check generated envelope/emittance
   PNGs plus JSON/CSV in temporary storage. No source outputs, image, dependencies
-  or packaging changed. Step 8 remains a final integration/documentation review;
-  existing end-to-end checks already exercise the individual stages together.
+  or packaging changed.
+- Step 8 (2026-10-27): all 92 tests passed, including independent coupled 6D
+  covariance and linear-drift Twiss/emittance checks. Added a reproducible
+  acceptance CLI in `tests/postprocess/check_fodo.py`, a checksum-pinned legacy
+  reference profile and clean/corrupt synthetic acceptance tests. Missing or
+  skipped required comparisons fail; a known bug requires exact input hashes,
+  revision and numeric signature. Headless PNGs and numerical export round trips
+  are tested. See `tests/postprocess/README.md` for commands and criteria.
+- Final local FODO acceptance: `passed_with_known_issue`; all 11 dumps and 1087
+  statistics rows checked, 33 diagnosed centroid metadata component mismatches,
+  no unexpected errors, unchanged input hashes, exported reports/arrays and two
+  plot overlays. Maximum relative emittance variation across dumps is 0.02955%
+  (x) and 0.15227% (y); the profile records measured variation without assuming
+  perfect conservation. Generated artifacts remain in ignored `output/`.
+- Packaging (2026-10-27): enabled editable installation with restricted package
+  discovery and unchanged dependency pins. The current environment's editable
+  Magnus SDK was preserved with `uv pip install --no-deps --editable .`.
+  Development acceptance code belongs under `tests/postprocess`; `scripts/`
+  remains reserved for workflow/Magnus runners.
+  Verified import from /tmp without PYTHONPATH, 92 passing tests through the
+  installed package, a current lockfile and a wheel containing only postprocess
+  and its readers. The local editable Magnus SDK and dependency pins are intact.
+- The v1 functional milestone and packaging are complete for the documented
+  formats and observables. Simulation correctness, new output families and the
+  upstream writer/image update are separate work.
 - Reference-data caveat: FODO's HDF5 `centroid` attribute differs from the means
   of its stored x/y/z datasets. Recomputed centroids agree with time-matched
   `.stat` mean columns. Preserve the upstream metadata without using it as a

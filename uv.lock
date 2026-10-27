@@ -10,7 +10,7 @@ resolution-markers = [
 [[package]]
 name = "accelerator-agent"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "google-adk" },
     { name = "h5py" },

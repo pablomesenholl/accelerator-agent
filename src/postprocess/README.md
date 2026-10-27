@@ -1,8 +1,9 @@
 # OPALX numerical postprocessing
 
-Packaging is deferred. Run from the repository with `PYTHONPATH=src` and the
-project `.venv` interpreter. This library reads local files; Magnus retrieval
-remains with the simulator skill. No simulation is launched by these functions.
+Install the project with `uv sync --locked` and use the project `.venv`
+interpreter. No `PYTHONPATH` setting is needed. This library reads local files;
+Magnus retrieval remains with the simulator skill. No simulation is launched by
+these functions.
 
 ```python
 from postprocess import analyze_snapshot
@@ -84,7 +85,7 @@ roadmap items.
 
 All discovery, reader, calculation, validation and export entry points can be
 imported from `postprocess`. The library returns data; agents choose plots and
-interpretations. Packaging is still deferred (`PYTHONPATH=src`).
+interpretations. The project environment installs the package in editable mode.
 
 ```python
 from pathlib import Path
@@ -274,8 +275,15 @@ attribute is preserved unchanged for inspection. This upstream metadata issue
 does not require changing the reader or simulation outputs.
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m unittest discover -s tests/postprocess -v
+.venv/bin/python -m unittest discover -s tests/postprocess -v
 ```
 
 Local FODO checks skip if generated outputs are absent. No external services or
 simulation execution are needed for the synthetic checks.
+
+The complete local acceptance command, pinned reference criteria, artifact
+layout and exit statuses are documented in
+[tests/postprocess/README.md](../../tests/postprocess/README.md). The executable
+check is `tests/postprocess/check_fodo.py`; it saves a report, verifies input
+integrity, checks exported data and renders headless FODO overlays. Packaging
+is enabled through the project's `pyproject.toml`.
