@@ -77,8 +77,108 @@ means geometric optics was not requested. Read status/issues before using values
 
 `.stat` contains reported summaries and cannot reconstruct a full particle
 covariance. Calculations here consume HDF5 snapshots; reported diagnostics stay
-separate. Exports, longitudinal Twiss, eigenemittances and charge-weighted moments
-remain roadmap items.
+separate. Longitudinal Twiss, eigenemittances and charge-weighted moments remain
+roadmap items.
+
+## Agent interface, plots and exports
+
+All discovery, reader, calculation, validation and export entry points can be
+imported from `postprocess`. The library returns data; agents choose plots and
+interpretations. Packaging is still deferred (`PYTHONPATH=src`).
+
+```python
+from pathlib import Path
+from postprocess import (
+    discover_run, select_file, read_stat, read_snapshot, list_snapshots,
+    analyze_snapshot, validate_statistics, validate_analysis,
+    to_dataframe, results_to_dataframe, write_json, write_statistics_csv,
+)
+
+run = Path("output/opalx-simulator/fodo-no-spacecharge")
+files = discover_run(run)
+stat_file = select_file(files, "statistics")
+particle_file = select_file(files, "snapshots")
+if stat_file is None or particle_file is None:
+    raise FileNotFoundError("This analysis requires statistics and particle dumps")
+
+# Plot reported statistics without changing their original units.
+stats = read_stat(files.root / stat_file)
+stats_report = validate_statistics(stats)
+table = to_dataframe(stats, columns=["s", "rms_x", "rms_y"], validation=stats_report)
+ax = table.plot(x="s", y=["rms_x", "rms_y"], ylabel="RMS size [m]")
+
+# Load particles one dump at a time; only small results remain in memory.
+results, reports = [], []
+for step in list_snapshots(files.root / particle_file):
+    snapshot = read_snapshot(files.root / particle_file, step)
+    result = analyze_snapshot(snapshot, longitudinal_axis="z")  # Verified for straight FODO.
+    results.append(result)
+    reports.append(validate_analysis(result, longitudinal_axis="z"))
+series = results_to_dataframe(results, validation_reports=reports)
+ax = series.plot(x="s", y=["emit_nx", "emit_ny"], ylabel="Normalized emittance [m]")
+
+out = Path("output/postprocess/fodo")
+csv_path, metadata_path = write_statistics_csv(stats, out / "statistics.csv", validation=stats_report)
+write_json(results[-1], out / "last_snapshot.json", validation=reports[-1])
+write_json(series.attrs, out / "series.metadata.json")
+series.to_csv(out / "series.csv", index=False)
+ax.figure.savefig(out / "emittance.png")
+```
+
+Inspect validation issues and skipped checks before interpreting plots. The
+metre labels above apply to this FODO fixture; generic statistics keep their
+source units in `table.attrs['units']`. Neither adapter converts units or filters
+rows. `longitudinal_axis='z'` remains an explicit frame assertion, not a default
+for arbitrary simulations. Use `validate_snapshot` for input checks as described
+below. Validation is never run implicitly by an exporter.
+
+| Entry point | Output and intended use |
+| --- | --- |
+| `to_summary(data, validation=None)` | A schema-versioned JSON-compatible dict for model/agent inspection. Accepts statistics, snapshots, calculation results, validation reports, inventories, timing and explicit mappings. |
+| `to_dataframe(stats_or_snapshot, columns=None, validation=None)` | Independent copies of original numerical columns, with each column's dtype preserved. Units, source and optional validation are in `.attrs`. |
+| `results_to_dataframe(results, validation_reports=None)` | One row per calculation: source, nullable integer step, status, s [m], time [s] and scalar quantities. Use for observable histories and plots. |
+| `write_json(data, path, ...)` | Strict UTF-8 JSON on disk; also accepts an already-created summary without wrapping it or losing diagnostics. |
+| `write_statistics_csv(table, path, columns=None, validation=None)` | Returns `(csv_path, metadata_path)`. The adjacent `<filename>.metadata.json` carries units, dtypes, source, column descriptions and validation. |
+
+Arrays also remain directly available in `stats.columns`, `snapshot.columns`,
+and `result.covariances[name].values`. Use per-column `.to_numpy()` on a DataFrame
+when retaining an integer dtype matters; converting a mixed float/integer frame
+to one homogeneous array can coerce integer IDs to float.
+
+`results_to_dataframe` preserves input order, failed/partial rows and missing
+observables (NaN, never zero). Known snapshot time/path coordinates are retained
+by calculation in `AnalysisResult`; unavailable coordinates remain missing.
+Quantities with conflicting units/definitions across results are rejected, as
+are array-valued quantities in this scalar adapter. Full result summaries,
+covariances, issues and assumptions stay in `series.attrs['results']`. No sorting,
+resampling or frame alignment is performed. Pandas operations and plain CSV can
+discard `.attrs`, so persist metadata separately when exchanging a derived table.
+
+Summaries omit full statistics/particle columns by default, retaining dtype,
+shape, units, description, first/last, finite min/max and nonfinite count. Pass
+`include_arrays=True` to `to_summary`/`write_json` when full column lists are
+needed. Calculated quantities and covariance matrices are always included.
+Original reported metadata is retained under `source.attributes`, separate from
+calculated quantities; the known incorrect upstream centroid is not repaired.
+
+NumPy scalars/arrays, paths and UTF-8 bytes are converted to JSON-native values.
+NaN/infinity become `null`, with their locations and kinds recorded in
+`serialization_issues`; original model values are unchanged. `nonfinite='raise'`
+rejects nonfinite numbers that would be serialized. This is a serialization
+policy, not input validation: omitted arrays may still contain nonfinite cells,
+which their descriptors count. Unknown objects or non-UTF-8 bytes raise instead
+of silently stringifying. Generic mappings are wrapped under `data`; existing
+schema-v1 summaries retain their layout. Integer values are not routed through
+float; JSON consumers must themselves support the required integer precision.
+
+CSV uses ordinary column-name headers and retains all numeric rows, including
+literal `nan`, `inf` and `-inf` cells. Exported metadata records nonfinite counts
+and original dtypes. Keep the sidecar with the CSV and restore dtypes explicitly
+when precision matters. Writers create parent directories, serialize metadata
+before opening output files, and refuse existing files unless `overwrite=True`.
+The CSV and sidecar are not an atomic two-file transaction. Other serialization
+or filesystem errors are raised to the caller. Exporting an invalid result is
+allowed for diagnosis and never changes its status to success.
 
 ## Validation
 

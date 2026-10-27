@@ -208,3 +208,7 @@ class AnalysisResult:
     covariances: dict[str, CovarianceMatrix] = field(default_factory=dict)
     issues: list[ValidationIssue] = field(default_factory=list)
     assumptions: list[str] = field(default_factory=list)
+    # Known snapshot coordinates, retained for plotting without reinterpreting
+    # raw reported attributes. None means unavailable; units are m and s.
+    s: float | None = None
+    time: float | None = None

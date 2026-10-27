@@ -83,7 +83,8 @@ def analyze_snapshot(
     """
     if longitudinal_axis not in (None, "z"):
         raise ValueError("Only an explicitly confirmed longitudinal z axis is supported")
-    result = AnalysisResult(snapshot.source, "failed", step=snapshot.step)
+    result = AnalysisResult(snapshot.source, "failed", step=snapshot.step,
+                            s=snapshot.s, time=snapshot.time)
     result.assumptions.extend([
         "Equal macroparticle weighting; population moments use normalization N, not N-1.",
         "Stored coordinate axes; no reference-orbit rotation, dispersion subtraction or particle filtering.",

@@ -29,7 +29,7 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
    values and singular calculations. Report errors with source context; compare
    reported and calculated diagnostics only at matched coordinates/conventions.
    Separate validators report performed/skipped checks without repairing data.
-7. [ ] Expose a small public API, JSON-compatible summaries and CSV statistics;
+7. [x] Expose a small public API, JSON-compatible summaries and CSV statistics;
    keep arrays directly available for plotting. Include units and assumptions.
 8. [ ] Complete synthetic numerical/error tests and a local FODO integration
    check; document supported formats and formulas. Do not launch simulations.
@@ -99,6 +99,21 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
   normalization. Differing geometric emittance estimators are not compared.
 - Timing remains optional text metadata. Validation neither filters particles,
   rewrites reported centroids, changes calculation status nor infers run success.
+- Export API: `to_summary`, `to_dataframe`, `results_to_dataframe`, `write_json`
+  and `write_statistics_csv`, alongside readers/discovery at the package root.
+  Summary schema version 1 retains units, source metadata, status, assumptions,
+  issues and optional validation. Full particle/statistics columns are opt-in;
+  compact descriptors include shape/dtype, finite ranges and nonfinite counts.
+- Table adapters copy original arrays and preserve individual column dtypes.
+  Analysis-series rows preserve input order, failures and unavailable quantities
+  as missing values. Unit/definition conflicts error. `AnalysisResult` now
+  retains known snapshot s/time in m/s for plotting without metadata inference.
+- JSON converts NumPy/Path/UTF-8 values explicitly. NaN/Inf become null with
+  recorded locations/kinds, or raise on request. Existing summaries retain their
+  validation/replacement diagnostics when written again. CSV preserves integer
+  values and source units, with a JSON metadata sidecar. Writers reject existing
+  destinations unless overwrite is explicit. No automatic validation/filtering
+  or unit/frame conversion is performed. See README for complete agent examples.
 
 ## Verification and limits
 
@@ -132,6 +147,15 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
   comparison flags exactly the three known HDF5 centroid metadata errors per
   snapshot while time-matched statistics values pass. Comparisons preserve all
   source metadata. Local integration checks skip if outputs are absent.
+- Step 7 (2026-10-27): all 81 tests passed. Added strict JSON/native type and
+  metadata round trips, explicit nonfinite handling, dtype/integer precision,
+  independent plotting copies, missing/failed series rows, incompatible units,
+  CSV/sidecar round trips, existing-file guards and unsupported-value checks.
+  Local FODO export integration passes for all 11 calculated snapshots and 1087
+  statistics rows. A separate headless smoke check generated envelope/emittance
+  PNGs plus JSON/CSV in temporary storage. No source outputs, image, dependencies
+  or packaging changed. Step 8 remains a final integration/documentation review;
+  existing end-to-end checks already exercise the individual stages together.
 - Reference-data caveat: FODO's HDF5 `centroid` attribute differs from the means
   of its stored x/y/z datasets. Recomputed centroids agree with time-matched
   `.stat` mean columns. Preserve the upstream metadata without using it as a

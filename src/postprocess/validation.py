@@ -249,6 +249,11 @@ def validate_analysis(result: AnalysisResult, *, longitudinal_axis=None, rtol=1e
     report = ValidationReport(issues=list(result.issues))
     source, step = result.source.path, result.step
 
+    for name in ("s", "time"):
+        value = getattr(result, name)
+        if value is not None and not _finite_scalar(value):
+            _issue(report, source, "invalid_coordinate", "Result coordinate must be a finite scalar or None", name, step=step)
+
     def problem(code, message, name):
         _issue(report, source, code, message, name, step=step)
 
