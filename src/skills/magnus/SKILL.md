@@ -16,9 +16,24 @@ magnus blueprint schema <blueprint-id> # parameter schema for a specific bluepri
 
 ## Setup
 
+Use the project's environment; see [README.md — Python environment](../../../README.md#python-environment) for setup with `uv sync --locked`.
+
+Run Magnus with the project's Python environment activated:
+
 ```bash
-pip install "magnus-sdk>=0.6.0"
-magnus config                  # check current connection — skip setup if already configured
+source .venv/bin/activate
+magnus config
+```
+
+Activation puts `magnus` on PATH so automatic output-retrieval
+subprocesses can find it. Calling `.venv/bin/magnus` directly alone
+does not ensure this.
+
+For agent tools that start a fresh shell for each command, activate
+the environment in the same invocation:
+
+```bash
+source .venv/bin/activate && magnus run <blueprint-id> -- ...
 ```
 
 If not configured, run `magnus login` (saves to `~/.magnus/config.json`, all shells pick up immediately):
@@ -58,7 +73,7 @@ When a blueprint parameter is typed `FileSecret`, passing a local file path trig
 
 ### Output download (MAGNUS_ACTION)
 
-Blueprints that produce output files write a `magnus receive` command to `MAGNUS_ACTION`. With `--execute-action true` (default), `magnus run` auto-executes this receive command.
+Blueprints that produce output files write a `magnus receive` command to `MAGNUS_ACTION`. With `--execute-action true` (default), `magnus run` auto-executes this receive command. Automatic retrieval requires `magnus` to be available on the invoking process’s PATH; see Setup.
 
 ## Job Management
 
@@ -76,11 +91,11 @@ Blueprint results typically contain at minimum `success` (bool) and `message` (s
 
 ## Error Handling
 
-If `magnus run` returns a non-success result:
+If `magnus run` fails or returns a non-success result:
 
 1. `magnus job result <job-id>` — structured error details
 2. `magnus logs <job-id>` — full execution output
-3. Fix and re-run
+3. Classify the failure as submission, computation, or output retrieval before resubmitting. If submission is uncertain, check job status first. If computation succeeded, recover output retrieval without resubmitting. Resubmit only after confirming no job was created or that computation must be repeated.
 
 Jobs continue on the Magnus backend even if the CLI client disconnects — interrupting `magnus run` (Ctrl-C) or a network drop only detaches the local client, the job keeps running. **Do not re-submit** — instead, reconnect:
 
