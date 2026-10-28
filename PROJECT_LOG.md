@@ -128,3 +128,14 @@ Project Log
 	Create a study plan for accelerator physics
 	Start watching a lecture: Transverse beam dynamics 1
 	Create first modules pf postprocess python lib
+27.10.26:
+	Add observable calculations to /postprocess
+	Find bug with centroid calc of h5 writer in centroid summaries of .h5 file
+	Add data and calculation validation to /postprocess
+	Finish transverse beam dynamics 1
+	First draft of beam-analyzer SKILL.md
+28.10.26:
+	Update magnus skill
+	Create a full first version beam-analyzer skill, including references, plot_style.py and OPALX logo
+	Test it once: works put generated stuff all over the place
+	
