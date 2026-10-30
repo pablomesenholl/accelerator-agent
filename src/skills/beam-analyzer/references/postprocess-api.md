@@ -10,9 +10,10 @@ and [public API](../../../postprocess/__init__.py).
 
 | Call | Returns / behavior |
 | --- | --- |
-| `discover_run(root)` | `RunFiles` with absolute `root` and sorted root-relative lists: `statistics`, `snapshots`, `timings`, `inputs`, `derived`, `unhandled`. Classification is by filename, not content or job success. Subdirectories named `analysis` or `plots` are treated as derived; override with `derived_directories=(...)`. |
-| `select_file(files, kind, path=None)` | Relative `Path` for `kind="statistics"`, `"snapshots"`, or `"timings"`. No candidate returns `None`; multiple candidates raise `AmbiguousOutputError`. Supply an inventoried `path` explicitly to resolve ambiguity; files are not paired by basename. |
+| `discover_run(root)` | `RunFiles` with absolute `root` and sorted root-relative lists: `statistics`, `snapshots`, `timings`, `closed_orbits`, `inputs`, `derived`, `unhandled`. Classification is by filename, not content or job success. Subdirectories named `analysis` or `plots` are treated as derived; override with `derived_directories=(...)`. |
+| `select_file(files, kind, path=None)` | Relative `Path` for `kind="statistics"`, `"snapshots"`, `"timings"`, or `"closed_orbits"`. No candidate returns `None`; multiple candidates raise `AmbiguousOutputError`. Supply an inventoried `path` explicitly to resolve ambiguity; files are not paired by basename. |
 | `read_stat(path)` | `StatisticsTable`: `.columns[name]` NumPy arrays, `.fields[name].unit` / `.description`, `.row_count`, `.source`. Supports numeric columns in ASCII SDDS with `no_row_counts=1`; malformed rows raise rather than being skipped. |
+| `read_closed_orbit(path)` | `ClosedOrbitData` from COF JSON: reported coordinates/residual (length 4), transfer map (4×4), convergence, stability and optional eigenvalues (4×2 real/imaginary pairs). All original fields remain in `.source.attributes`. Discovery recognizes `closed-orbit.json`; custom filenames can be read directly. See COF-only outputs below. |
 | `list_snapshots(path)` | Sorted integer dump IDs from flat HDF5 `Step#N` groups, without loading particle arrays. IDs are not integration-step counts; zero and an exact exit dump are not guaranteed. |
 | `read_snapshot(path, step)` | One materialized `ParticleSnapshot`; file is closed before return. `.columns`, `.fields`, `.particle_count`, `.step`, `.group_name`, `.source`, `.s` [m], `.time` [s]. Missing/unknown coordinate units yield `None` for `.s`/`.time`. |
 | `read_timing(path)` | `TimingData` with `.text` and `.source`; preserves UTF-8 text, without parsing timer values or inferring success. |
@@ -68,7 +69,8 @@ performed checks; it does not prove job completion or physical validity.
 
 | Call | Checks |
 | --- | --- |
-| `validate_run_files(files, required=("statistics", "snapshots"))` | Required file categories, existence/size; warns on multiple candidates and records unsupported artifacts. Use `required=("statistics",)` for statistics-only analysis. |
+| `validate_run_files(files, required=("statistics", "snapshots"))` | Required file categories, existence/size; warns on multiple candidates and records unsupported artifacts. Use `required=("statistics",)` for statistics-only analysis or `required=("closed_orbits",)` for COF-only analysis. |
+| `validate_closed_orbit(orbit, require_stable=False, position_atol=None, momentum_atol=None)` | COF numerical integrity, metadata and convergence. Optionally requires reported `STABLE` and strict closure bounds in m and p/(mc). Does not independently compare the map, eigenvalues or tunes; see COF-only outputs below. |
 | `validate_statistics(stats, required=("t", "s", "numParticles"))` | Numeric integrity, counts, nonnegative spreads/emittances, bounded correlations, time ordering. Does not assume particle or energy conservation. |
 | `validate_snapshot(snapshot, longitudinal_axis=None)` | Six phase-space fields, numeric integrity, units, coordinates, IDs, species and weighting; requires forward pz when z is requested. |
 | `validate_analysis(result, longitudinal_axis=None)` | Calculation status/issues, completeness, units, covariance consistency, emittance and Twiss identities. Use the same longitudinal-axis argument as calculation. |
@@ -143,9 +145,9 @@ write_json({"files": to_summary(file_report), "statistics": to_summary(stat_repo
   nullable-integer `step`, `status`, `s`, `time`, and scalar quantities. It neither
   sorts nor aligns runs. Conflicting units/definitions and array quantities raise.
 - `to_summary(data, validation=None, include_arrays=False)` returns a JSON-compatible
-  summary of tables, snapshots, results, reports, inventories, timing or mappings.
+  summary of tables, snapshots, COF data, results, reports, inventories, timing or mappings.
   `write_json(data, path, ...)` writes it. Full particle/statistics arrays are
-  omitted by default; calculated quantities and covariances remain included.
+  omitted by default; small COF arrays, calculated quantities and covariances remain included.
 - `write_statistics_csv(stats, path, columns=None, validation=None)` returns
   `(csv_path, metadata_path)`; keep the `<filename>.metadata.json` sidecar.
   Pandas CSV does not preserve `.attrs`; save derived-series metadata separately.
@@ -153,3 +155,32 @@ write_json({"files": to_summary(file_report), "statistics": to_summary(stat_repo
   `overwrite=True`. JSON converts NaN/Inf to `null` with `serialization_issues`;
   `nonfinite="raise"` rejects them. CSV retains literal nan/inf values. Exporters
   do not validate, filter, or repair data.
+
+## COF-only outputs
+
+Use `read_closed_orbit(path)` for the observed COF JSON layout. Discovery
+recognizes `closed-orbit.json` in `closed_orbits`; custom names can be read
+explicitly. Other JSON is not classified as COF. For a COF-only task use
+`validate_run_files(files, required=("closed_orbits",))`.
+
+`ClosedOrbitData` exposes `.converged`, `.coordinates`, `.residual`, `.matrix`,
+`.stability`, optional `.eigenvalues` (real/imaginary pairs), `.coordinate_order`,
+`.units` and `.source`. Coordinate order is `(x, px, y, py)`, units are
+`(m, p/(mc), m, p/(mc))`, and map entry i,j has units units[i]/units[j]. All
+original fields remain in `.source.attributes`, including fractional modes,
+energy drift and section-frame metadata. This is a transfer map, not a particle
+snapshot or covariance. Do not apply `analyze_snapshot` to it.
+
+`validate_closed_orbit(orbit, require_stable=False, position_atol=None,
+momentum_atol=None)` checks numeric integrity, metadata and convergence.
+Optional closure bounds are strict absolute bounds in m and p/(mc), respectively.
+DBA uses `require_stable=True`, `position_atol=1e-7`, `momentum_atol=1e-7`.
+Reported stability is not independently recomputed. Inspect skipped checks;
+validation alone does not establish map accuracy against analytic optics.
+
+`to_summary(orbit, validation=report)` and `write_json` preserve all small COF
+arrays and source metadata. No DataFrame adapter or slope conversion is implicit.
+For this DBA fixture, the separate offline checker
+`tests/postprocess/check_dba.py` compares `T^-1 M T` with the analytic transverse
+slope map, using `p0_mc` explicitly recovered from the run log; see the
+[acceptance documentation](../../../../tests/postprocess/README.md).

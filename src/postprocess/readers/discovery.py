@@ -7,7 +7,7 @@ from typing import Literal
 from ..models import RunFiles
 
 
-OutputKind = Literal["statistics", "snapshots", "timings"]
+OutputKind = Literal["statistics", "snapshots", "timings", "closed_orbits"]
 
 
 class AmbiguousOutputError(ValueError):
@@ -28,7 +28,8 @@ def discover_run(
     Classification uses names only, not contents. .stat and .h5/.hdf5 files are
     candidates for future readers, not confirmed compatible diagnostics. .in
     files are inputs and timing.dat is execution metadata. Other formats,
-    including JSON and auxiliary .dat/.sdds files, remain unhandled.
+    including JSON other than closed-orbit.json and auxiliary .dat/.sdds files,
+    remain unhandled. Custom COF filenames can be read directly.
 
     Files below directory components named in derived_directories are derived
     artifacts, even if their extensions resemble simulation outputs. Names are
@@ -62,6 +63,8 @@ def discover_run(
             inventory.snapshots.append(relative)
         elif path.name.lower() == "timing.dat":
             inventory.timings.append(relative)
+        elif path.name.lower() == "closed-orbit.json":
+            inventory.closed_orbits.append(relative)
         else:
             inventory.unhandled.append(relative)
     return inventory
@@ -80,7 +83,7 @@ def select_file(
     the run root or relative to that root. This selects from the inventory; it
     does not recheck file existence or validate file contents.
     """
-    if kind not in ("statistics", "snapshots", "timings"):
+    if kind not in ("statistics", "snapshots", "timings", "closed_orbits"):
         raise ValueError(f"Unsupported output kind: {kind!r}")
     candidates = getattr(inventory, kind)
     if path is not None:

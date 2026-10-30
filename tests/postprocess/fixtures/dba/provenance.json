@@ -1,0 +1,26 @@
+{
+  "source": "/home/pablo/semester-project/opalx-simulations/dba-cof-1",
+  "description": "Historical packaging-validation outputs; not fresh simulation results.",
+  "files": {
+    "nominal/closed-orbit.json": {
+      "source": "results/packaging-validation/opalx/nominal/closed-orbit.json",
+      "sha256": "0f3c95d924321c1e84f5495aa899d9de684b16403dbb1a99100b1313808f3da9"
+    },
+    "displaced/closed-orbit.json": {
+      "source": "results/packaging-validation/opalx/displaced/closed-orbit.json",
+      "sha256": "d1faac679ae9b3362fd6090c413bc611ee84f04154c1337544dba40618cccf29"
+    },
+    "ring-slope-map.txt": {
+      "source": "reference/ring-slope-map.txt",
+      "sha256": "b26bce10a309d96b0077f2d42102e15314bb1412eff314a85643e39ac81e5367"
+    },
+    "nominal/run.log.txt": {
+      "source": "results/packaging-validation/opalx/nominal/run.log",
+      "sha256": "6e827825d70e3f29673741132a1310ca5c07cd06951f300efc140c287761811c"
+    },
+    "displaced/run.log.txt": {
+      "source": "results/packaging-validation/opalx/displaced/run.log",
+      "sha256": "262486ffe288f718f3426ec03482582312b3877e7a3630c022721c94f0a4b51c"
+    }
+  }
+}

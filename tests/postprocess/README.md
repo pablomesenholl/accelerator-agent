@@ -100,3 +100,37 @@ For a future clean FODO dataset, omit `--reference`; all centroid mismatches the
 fail. A changed dataset cannot inherit the legacy exception based on a revision
 string alone. Keep the legacy profile for its regression and add a separately
 reviewed profile if another dataset needs fixed numerical expectations.
+# DBA COF acceptance
+
+The offline checker consumes an existing case directory with `closed-orbit.json`
+and `run.log`; it never launches OPALX:
+
+```bash
+.venv/bin/python tests/postprocess/check_dba.py /path/to/opalx/nominal \
+  --reference /path/to/reference/ring-slope-map.txt \
+  --output output/postprocess/dba/nominal.json
+```
+
+Run separately for nominal and displaced seeds. The checker requires converged
+COF, reported `STABLE`, closure components strictly below `1e-7` (metres for
+positions, p/(mc) for momenta), and all transverse slope-map entry errors strictly
+below `1e-6`, using a 1 m position scale. It reads exactly one positive finite
+`p0_mc` from the log and applies `T^-1 M T`, `T=diag(1,p0,1,p0)`. It checks only
+the transverse block of a 4x4 or 6x6 reference. Energy drift and fractional modes
+are preserved without additional acceptance bounds. PASS exits 0; invalid,
+missing or failing data exits 1; invalid CLI arguments exit 2. An optional JSON
+report includes the converted map, difference and validation; existing reports
+are refused. These checks do not independently verify tunes, dispersion or
+longitudinal dynamics.
+
+`fixtures/dba/` holds small historical nominal/displaced packaging-validation
+outputs and the independent analytic slope map from the local `dba-cof-1`
+package. `provenance.json` records original paths and SHA-256 hashes. Logs have
+the suffix `.log.txt` to retain them as test fixtures; tests materialize the
+original `run.log` names in temporary directories. These are regression fixtures,
+not fresh simulations. The unit suite verifies hashes, both seeds, malformed
+inputs, nonfinite values, nonconvergence, closure/map failures and exports:
+
+```bash
+.venv/bin/python -m unittest discover -s tests/postprocess -v
+```

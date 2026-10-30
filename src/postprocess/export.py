@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from .models import (
-    AnalysisResult, ParticleSnapshot, RunFiles, StatisticsTable, TimingData,
+    AnalysisResult, ClosedOrbitData, ParticleSnapshot, RunFiles, StatisticsTable, TimingData,
     ValidationReport, _check_columns,
 )
 
@@ -133,14 +133,16 @@ def to_summary(data, *, include_arrays=False, validation: ValidationReport | Non
     """Return schema-v1 JSON-compatible data, omitting full particle arrays by default.
 
     Supports loaded tables/snapshots, AnalysisResult, ValidationReport, RunFiles,
-    TimingData and explicit mappings. Source metadata stays separate from
-    calculated quantities. Nonfinite numbers become null with JSON locations in
+    TimingData, ClosedOrbitData and explicit mappings. Source metadata stays
+    separate from calculated quantities. Nonfinite numbers become null with JSON locations in
     serialization_issues, or raise with nonfinite='raise'. Column descriptors
     count all nonfinite cells; finite_min/max describe only finite entries.
     Unknown objects, non-string dictionary keys and non-UTF-8 bytes raise.
     """
     if isinstance(data, _TABLES):
         payload = _table_summary(data, _selected(data, None), include_arrays)
+    elif isinstance(data, ClosedOrbitData):
+        payload = {"kind": "closed_orbit", **{f.name: getattr(data, f.name) for f in fields(data)}}
     elif isinstance(data, AnalysisResult):
         payload = {"kind": "analysis_result", **{f.name: getattr(data, f.name) for f in fields(data)},
                    "coordinate_units": {"s": "m", "time": "s"}}

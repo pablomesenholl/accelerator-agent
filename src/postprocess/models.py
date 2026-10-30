@@ -54,6 +54,28 @@ class RunFiles:
     inputs: list[Path] = field(default_factory=list)
     derived: list[Path] = field(default_factory=list)
     unhandled: list[Path] = field(default_factory=list)
+    closed_orbits: list[Path] = field(default_factory=list)
+
+
+@dataclass
+class ClosedOrbitData:
+    """Reported COF diagnostics, not a particle population or covariance.
+
+    Coordinates/residual use (x, px, y, py), in (m, p/(mc), m, p/(mc)).
+    Matrix entry i,j has units units[i]/units[j]. Eigenvalues retain the
+    writer's real/imaginary pairs. All original JSON fields, including unknown
+    extensions and section-frame metadata, remain in source.attributes.
+    """
+
+    source: SourceMetadata
+    converged: bool
+    coordinates: NumericArray
+    residual: NumericArray
+    matrix: NumericArray
+    stability: str
+    eigenvalues: NumericArray | None = None
+    coordinate_order: tuple[str, ...] = field(default=("x", "px", "y", "py"), init=False)
+    units: tuple[str, ...] = field(default=("m", "p/(mc)", "m", "p/(mc)"), init=False)
 
 
 @dataclass

@@ -5,6 +5,58 @@ interpreter. No `PYTHONPATH` setting is needed. This library reads local files;
 Magnus retrieval remains with the simulator skill. No simulation is launched by
 these functions.
 
+## Closed-orbit finder (COF) JSON
+
+COF-only runs such as `dba-cof-1` produce `closed-orbit.json` without particle
+tracking outputs. Discovery recognizes that filename (case-insensitive) in
+`files.closed_orbits`; other JSON remains unhandled. Custom COF filenames can
+be passed directly to `read_closed_orbit`.
+
+```python
+from postprocess import (
+    discover_run, select_file, read_closed_orbit, validate_run_files,
+    validate_closed_orbit, write_json,
+)
+
+files = discover_run("output/my-dba-run/results")
+file_report = validate_run_files(files, required=("closed_orbits",))
+selected = select_file(files, "closed_orbits")  # Select an explicit path for multiple cases.
+if selected is None:
+    raise FileNotFoundError("COF JSON is required")
+orbit = read_closed_orbit(files.root / selected)
+report = validate_closed_orbit(
+    orbit, require_stable=True, position_atol=1e-7, momentum_atol=1e-7,
+)
+write_json(orbit, "output/my-dba-run/analysis/closed_orbit_summary.json", validation=report)
+```
+
+`ClosedOrbitData` exposes `converged`, `coordinates`, `residual`, `matrix`,
+`stability`, optional `eigenvalues` (four real/imaginary pairs), `source`,
+`coordinate_order` and `units`. Vectors and the map are NumPy arrays in
+`(x, px, y, py)` order, with units `(m, p/(mc), m, p/(mc))`; matrix entry i,j
+has units units[i]/units[j]. This map is not a covariance matrix. Every original
+JSON field remains in `source.attributes`, including fractional modes,
+energy/drift, species and section origin/rotation. Raw metadata and materialized
+arrays are independent; neither is silently repaired or synchronized on mutation.
+COF files have no verified revision field in the observed layout.
+
+The reader requires boolean `converged`, four-component coordinates/residual,
+a 4x4 real map and string stability; duplicate JSON keys, unrelated JSON and
+malformed structures raise with file context. Optional eigenvalues must be 4x2.
+Nonfinite numbers and nonconverged results are retained for diagnosis. Validation
+checks numerical integrity, convergence and available metadata. Stability is
+required only when `require_stable=True`; closure thresholds are optional,
+strict absolute bounds in metres and p/(mc), respectively. Skipped checks remain
+visible. No independent eigenvalue/tune or analytic-map comparison occurs in
+this validator. Reported fractional phases do not establish integer tunes or
+an oriented phase branch. No slope conversion or bent-orbit frame is inferred.
+
+`to_summary`/`write_json` include all small COF arrays even with the default
+`include_arrays=False`. Existing strict JSON and overwrite policies apply.
+Particle/statistics DataFrame adapters and `analyze_snapshot` retain their
+existing scope. See [DBA acceptance checks](../../tests/postprocess/README.md)
+for the separate analytic-map comparison using logged reference momentum.
+
 ```python
 from postprocess import analyze_snapshot
 from postprocess.readers import read_snapshot

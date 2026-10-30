@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from .models import (
-    AnalysisResult, CovarianceMatrix, ParticleSnapshot, RunFiles, StatisticsTable, TimingData,
+    AnalysisResult, ClosedOrbitData, CovarianceMatrix, ParticleSnapshot, RunFiles, StatisticsTable, TimingData,
     ValidationIssue, ValidationReport,
 )
 
@@ -67,9 +67,9 @@ def validate_run_files(files: RunFiles, *, required=("statistics", "snapshots"))
     Multiple candidates warn and require explicit selection before loading.
     Presence is not parsing/physics validation. Paths must stay inside the root.
     """
-    kinds = ("statistics", "snapshots", "timings")
+    kinds = ("statistics", "snapshots", "timings", "closed_orbits")
     if any(kind not in kinds for kind in required):
-        raise ValueError("Required categories must be statistics, snapshots or timings")
+        raise ValueError(f"Required categories must be among {kinds}")
     report = ValidationReport()
     root = Path(files.root).resolve()
     if not root.is_dir():
@@ -95,6 +95,102 @@ def validate_run_files(files: RunFiles, *, required=("statistics", "snapshots"))
                        "warning" if kind == "timings" and kind not in required else "error")
     report.checks.append("required output categories and inventoried file existence/size")
     report.skipped.extend(f"Unsupported artifact: {path}" for path in files.unhandled)
+    return report
+
+
+def validate_closed_orbit(
+    data: ClosedOrbitData, *, require_stable=False,
+    position_atol=None, momentum_atol=None,
+) -> ValidationReport:
+    """Check COF integrity/convergence; optionally enforce benchmark criteria.
+
+    Closure bounds are strict absolute bounds, separately in m and p/(mc).
+    Stability is reported, not independently recomputed. Map accuracy against
+    a reference and any slope conversion belong to a separate comparison.
+    """
+    for name, value in (("position_atol", position_atol), ("momentum_atol", momentum_atol)):
+        if value is not None and (isinstance(value, (bool, np.bool_))
+                                  or not isinstance(value, (int, float, np.integer, np.floating))
+                                  or not np.isfinite(value) or value <= 0):
+            raise ValueError(f"{name} must be a finite positive number")
+    report = ValidationReport()
+    source = data.source.path
+
+    def numeric(value, shape, name):
+        try:
+            array = np.asarray(value)
+        except (TypeError, ValueError):
+            array = np.asarray(None)
+        if array.shape != shape or array.dtype.kind not in "iuf":
+            _issue(report, source, "invalid_dimensions", f"Expected real numeric shape {shape}", name)
+        elif not np.all(np.isfinite(array)):
+            _issue(report, source, "nonfinite_data", "Contains NaN or infinity", name)
+        else:
+            return array
+        return None
+
+    numeric(data.coordinates, (4,), "coordinates")
+    residual = numeric(data.residual, (4,), "residual")
+    numeric(data.matrix, (4, 4), "matrix")
+    if data.eigenvalues is not None:
+        numeric(data.eigenvalues, (4, 2), "eigenvalues")
+    else:
+        report.skipped.append("Reported eigenvalues are absent")
+    if type(data.converged) is not bool:
+        _issue(report, source, "invalid_metadata", "Expected boolean", "converged")
+    elif not data.converged:
+        _issue(report, source, "not_converged", "COF did not converge", "converged")
+    if not isinstance(data.stability, str) or not data.stability:
+        _issue(report, source, "invalid_metadata", "Expected nonempty classification", "stability")
+    if require_stable:
+        if data.stability != "STABLE":
+            _issue(report, source, "unstable_orbit", "Required STABLE classification", "stability")
+        report.checks.append("reported STABLE classification")
+    else:
+        report.skipped.append("Stable classification is not required")
+
+    metadata = data.source.attributes
+    shapes = {"position_m": (3,), "momentum_mc": (3,), "section_origin_m": (3,),
+              "section_rotation_wxyz": (4,), "dt_s": (), "energy_MeV": (),
+              "relative_energy_drift": (), "time_s": (), "mass_eV": (), "charge_e": ()}
+    for name, shape in shapes.items():
+        if name not in metadata:
+            report.skipped.append(f"Optional COF metadata {name} is absent")
+            continue
+        array = numeric(metadata[name], shape, name)
+        if array is not None:
+            if name in ("mass_eV", "dt_s") and array <= 0:
+                _issue(report, source, "invalid_metadata", "Must be positive", name)
+            if name == "section_rotation_wxyz" and not np.isclose(np.linalg.norm(array), 1., rtol=1e-8, atol=1e-12):
+                _issue(report, source, "invalid_metadata", "Expected unit quaternion", name)
+    for name in ("line", "species"):
+        if name in metadata and (not isinstance(metadata[name], str) or not metadata[name]):
+            _issue(report, source, "invalid_metadata", "Expected nonempty string", name)
+    if "near_integer" in metadata and type(metadata["near_integer"]) is not bool:
+        _issue(report, source, "invalid_metadata", "Expected boolean", "near_integer")
+    if "fractional_modes" in metadata:
+        modes = metadata["fractional_modes"]
+        if not isinstance(modes, list):
+            _issue(report, source, "invalid_metadata", "Expected list", "fractional_modes")
+        else:
+            for i, mode in enumerate(modes):
+                for key in ("tune", "complement"):
+                    name = f"fractional_modes[{i}].{key}"
+                    value = numeric(mode.get(key) if isinstance(mode, dict) else None, (), name)
+                    if value is not None and not 0 <= value <= 1:
+                        _issue(report, source, "invalid_metadata", "Expected fractional phase in [0, 1]", name)
+    report.checks.append("COF numeric dimensions, finiteness, metadata and convergence")
+    for indices, bound, label in (((0, 2), position_atol, "position"),
+                                  ((1, 3), momentum_atol, "momentum")):
+        if bound is None:
+            report.skipped.append(f"No {label} closure bound requested")
+        elif residual is None:
+            report.skipped.append(f"Cannot check {label} closure: invalid residual")
+        else:
+            if np.any(np.abs(residual[list(indices)]) >= bound):
+                _issue(report, source, "closure_tolerance", f"{label} closure must be < {bound}", "residual")
+            report.checks.append(f"{label} closure bound")
+    report.skipped.append("Independent reference-map, eigenvalue and tune comparisons are not performed")
     return report
 
 

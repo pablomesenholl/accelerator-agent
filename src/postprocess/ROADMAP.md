@@ -15,7 +15,8 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
    imports without `PYTHONPATH`, including from outside the repository.
 3. [x] Discover files in `readers/discovery.py`: support absent outputs, multiple
    candidates and explicit selection. Separate inputs and derived artifacts;
-   inventory unsupported files (including JSON) without interpreting them.
+   inventory unsupported files without interpreting them. COF JSON support is
+   recorded below.
 4. [x] Read the observed ASCII SDDS `.stat` format and selected HDF5 snapshots.
    Preserve header parameters, column types, descriptions, units and attributes.
    Sort snapshot IDs numerically; avoid loading every snapshot at once. Retain
@@ -50,7 +51,8 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
   for multiple candidates. An explicit path selects an inventoried candidate.
 - Discovery classifies names, not contents. `.in` files are inputs; files under
   `analysis`/`plots` directories are derived (configurable with
-  `derived_directories`). JSON, auxiliary outputs and symlinks stay unhandled;
+  `derived_directories`). `closed-orbit.json` is a COF candidate;
+  other JSON, auxiliary outputs and symlinks stay unhandled;
   symlink directories are not traversed. No basename pairing is assumed.
 - Reader API (from `postprocess.readers`): `read_stat(path)`,
   `list_snapshots(path)`, `read_snapshot(path, step)` and `read_timing(path)`.
@@ -187,5 +189,20 @@ The library consumes local results; Magnus retrieval stays with opalx-simulator.
 - FODO reference: `output/opalx-simulator/fodo-no-spacecharge`; `.stat` time is
   ns, HDF5 time is s; 11 particle snapshots. Verify reported attribute semantics
   before using them as numerical reference values.
-- Deferred: DBA/COF JSON readers pending representative outputs, structured
-  timing analysis, weighted moments, coupled optics and longitudinal Twiss.
+- Deferred: structured timing analysis, weighted moments, coupled optics and longitudinal Twiss.
+
+## COF JSON extension (2026-10-30)
+
+- Added `ClosedOrbitData`, `read_closed_orbit`, `closed_orbits` discovery/selection,
+  `validate_closed_orbit` and summary/export support for the observed DBA layout.
+  Existing FODO requirements and particle calculations remain unchanged.
+- Raw JSON stays in source attributes; coordinate order and momentum units are
+  explicit. Integrity/convergence validation is separate from optional stability
+  and closure requirements. Analytic comparisons stay in the offline DBA checker.
+- `tests/postprocess/check_dba.py` uses logged actual `p0_mc` for slope conversion.
+  Historical nominal/displaced fixtures carry source paths and hashes; no new
+  simulation, dependency or blueprint change is required.
+- Verification: all 100 postprocess tests passed, including existing FODO
+  integration and both checksum-pinned DBA seeds. Direct CLI checks on the
+  historical packaging-validation outputs passed with maximum map errors
+  6.31214e-9 (nominal) and 4.42278e-9 (displaced). No simulations were launched.
