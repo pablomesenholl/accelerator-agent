@@ -16,6 +16,8 @@ Validation has four layers: native OPALX syntax validation, structural and seman
 - Use the `opalx-simulator` skill only after validation succeeds.
 - Delegate nontrivial beam-optics calculations or physics design to a dedicated accelerator-physics skill when available.
 
+Before writing reports, follow the shared [run layout](../references/run-layout.md) and retain the run ID supplied by the preceding stage.
+
 ## Inputs
 
 - `simulation` — path to a prepared OPALX `.in` file or simulation directory.
@@ -26,7 +28,7 @@ The input paths should remain compatible with the `opalx-simulator` skill. If th
 
 ## Outputs
 
-Return a validation report containing:
+Save the validation report to `output/<run-id>/progress/validation.md` and return its path with the run directory. Include:
 
 - **Status:** `PASS`, `FAIL`, or `INCONCLUSIVE`.
 - **Validated input:** simulation path and relative main `.in` path.

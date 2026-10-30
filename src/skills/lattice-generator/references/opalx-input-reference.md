@@ -492,10 +492,10 @@ OPTION, AUTOPHASE=0;
 
 ## 12. Input directories and external dependencies
 
-The generator produces a **portable input bundle**. Create only the supporting files the requested simulation actually needs, and report the simulation directory and the main `.in` path **relative to it**. For example:
+The generator produces a **portable input bundle** in `output/<run-id>/inputs/`, following the shared [run layout](../../references/run-layout.md). Create only the supporting files the requested simulation actually needs, and report the simulation directory and the main `.in` path **relative to it**. For example:
 
 ```text
-simulation/
+output/<run-id>/inputs/
 ├── main.in
 ├── particles.txt                 # if using FROMFILE
 ├── fieldmaps/

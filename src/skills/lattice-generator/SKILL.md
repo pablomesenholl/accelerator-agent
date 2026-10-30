@@ -19,6 +19,8 @@ This skill is responsible for input generation only.
 - Simulation execution and result retrieval are delegated to the `opalx-simulator` skill.
 - Magnus job management is part of the `magnus` skill.
 
+Before creating artifacts, follow the shared [run layout](../references/run-layout.md).
+
 ## Inputs
 
 The skill accepts a natural-language description of an accelerator simulation, potentially including:
@@ -244,20 +246,20 @@ Do not restrict input construction to a fixed template or predefined lattice top
 
 ### Step 4: Prepare the simulation directory
 
-Create a dedicated directory for the generated simulation input.
+Create `output/<run-id>/inputs/` for the generated simulation input, using the shared run ID throughout the workflow.
 
 Place the main `.in` file and all necessary supporting files inside this directory.
 
 For example:
 
 ```text
-simulation/
+output/<run-id>/inputs/
 ├── simulation.in
 └── supporting-files/
     └── ...
 ```
 
-The exact directory structure may depend on the simulation.
+The supporting-file structure inside `inputs/` may depend on the simulation.
 
 Ensure that file references within the input use appropriate paths relative to the simulation directory.
 
@@ -272,7 +274,7 @@ The resulting directory should be self-contained and portable to the OPALX execu
 
 ### Step 5: Return the generated input
 
-Report the generated simulation input to the user or calling agent.
+Save the generation summary, including parameters, derivations and assumptions, to `output/<run-id>/progress/generation.md`. Report the run directory and generated simulation input to the user or calling agent.
 
 Provide:
 

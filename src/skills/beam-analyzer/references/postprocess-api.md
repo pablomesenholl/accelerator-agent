@@ -100,7 +100,7 @@ from postprocess import (
 )
 
 files = discover_run("output/my-run/results")
-out = Path("output/postprocess/my-run/new-analysis/data")
+out = Path("output/my-run/analysis/new-analysis/data")
 out.mkdir(parents=True, exist_ok=False)
 file_report = validate_run_files(files)
 stat_path = select_file(files, "statistics")  # Supply path=... if ambiguous.

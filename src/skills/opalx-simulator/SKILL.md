@@ -15,13 +15,15 @@ The skill is responsible for simulation execution and result retrieval. It assum
 
 Use the `magnus` skill for generic Magnus configuration, job management, status checks, output retrieval, and backend error recovery.
 
+Before creating artifacts, follow the shared [run layout](../references/run-layout.md) and retain the run ID supplied by the preceding stage.
+
 ## Inputs
 
 The `opalx-simulation` blueprint accepts:
 
 - `simulation` — required Magnus `FileSecret` containing either a single OPALX input file or a simulation directory with the input file and any required auxiliary files.
 - `input_file` — required name or relative path of the OPALX `.in` file to execute inside the simulation input.
-- `output` — local path where Magnus downloads the completed simulation directory. Default: `opalx-output`.
+- `output` — local path where Magnus downloads the completed simulation directory. Use `output/<run-id>/results/` explicitly; `opalx-output` is the blueprint default only.
 
 `input_file` must remain inside the uploaded simulation input. For a single-file upload, it must identify that uploaded file.
 
@@ -66,22 +68,22 @@ magnus blueprint schema opalx-simulation
 
 ### Step 3: Run the simulation
 
-Submit the simulation through the `opalx-simulation` blueprint:
+Submit the simulation through the `opalx-simulation` blueprint (replace `my-run` with the shared run ID in these examples):
 
 ```bash
 magnus run opalx-simulation -- \
-  --simulation path/to/simulation \
-  --input_file path/to/input.in \
-  --output path/to/results
+  --simulation output/my-run/inputs \
+  --input_file main.in \
+  --output output/my-run/results
 ```
 
 For a single-file simulation, `--simulation` points to the `.in` file and `--input_file` is that file's name.
 
 For a simulation directory, `--simulation` points to the directory and `--input_file` is the `.in` file path relative to that directory.
 
-Use an explicit `--output` path for reproducible result placement, even though the blueprint default is `opalx-output`.
+Always pass `output/<run-id>/results/` as `--output`; do not rely on the blueprint default. Use a new run ID for a new simulation rather than overwriting retrieved results.
 
-Capture the job ID printed by Magnus.
+Capture the job ID printed by Magnus in `output/<run-id>/progress/simulation.md`. Record execution and retrieval status, including failures, there; place saved execution logs alongside it.
 
 ### Step 4: Check the result and retrieve outputs
 
@@ -94,6 +96,8 @@ Inspect the Magnus result and confirm:
 
 If the user requested a specific diagnostic or downstream analysis, verify that the corresponding output file exists before handing the result to another skill.
 
+Update `progress/simulation.md` with the outcome and return the run directory, job ID and retrieved result path.
+
 A failed OPALX run may still produce a retrieved simulation directory. Inspect it together with the Magnus logs when diagnosing failures.
 
 ## Usage
@@ -102,18 +106,18 @@ Single-file simulation:
 
 ```bash
 magnus run opalx-simulation -- \
-  --simulation path/to/fodo.in \
+  --simulation output/my-run/inputs/fodo.in \
   --input_file fodo.in \
-  --output results/fodo
+  --output output/my-run/results
 ```
 
 Simulation directory:
 
 ```bash
 magnus run opalx-simulation -- \
-  --simulation path/to/simulation/ \
-  --input_file inputs/fodo.in \
-  --output results/fodo
+  --simulation output/my-run/inputs/ \
+  --input_file fodo.in \
+  --output output/my-run/results
 ```
 
 Generic Magnus behavior is documented in the `magnus` skill.
@@ -136,16 +140,16 @@ Do not repeatedly resubmit an unchanged failing simulation.
 
 ```bash
 magnus run opalx-simulation -- \
-  --simulation examples/fodo.in \
+  --simulation output/my-run/inputs/fodo.in \
   --input_file fodo.in \
-  --output results/fodo
+  --output output/my-run/results
 ```
 
 ### Simulation directory
 
 ```bash
 magnus run opalx-simulation -- \
-  --simulation examples/fodo-bundle/ \
+  --simulation output/my-run/inputs/ \
   --input_file fodo.in \
-  --output results/fodo-bundle
+  --output output/my-run/results
 ```

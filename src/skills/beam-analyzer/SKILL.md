@@ -11,12 +11,14 @@ Analyze **existing, local OPALX results**. Read the local references at the work
 
 Respect the workflow boundary: the `opalx-simulator` skill handles Magnus execution and output retrieval. Do not submit simulations, modify source data or OPALX inputs, or change reusable library/skill code to fulfill an ordinary analysis request. A final LaTeX/PDF report belongs to a separate reporting skill.
 
+Before creating artifacts, follow the shared [run layout](../references/run-layout.md). Reuse the source run ID and choose a new analysis ID.
+
 ## Inputs and outputs
 
 - **Input:** a local simulation-results directory (normally retrieved through Magnus), plus any user-requested observables, plots, comparison runs, or analysis constraints.
 - **Output:** figures, reproducible analysis script(s), relevant derived data, a short scientific summary, and an artifact manifest. Report incomplete or unsuccessful analysis explicitly.
 
-Write to a **new** `output/postprocess/<run-id>/<analysis-id>/` directory, outside the raw simulation directory:
+Write to a **new** `output/<run-id>/analysis/<analysis-id>/` directory, outside the raw simulation directory:
 
 ```text
 scripts/analysis.py       # Executable, reproducible analysis and plotting
