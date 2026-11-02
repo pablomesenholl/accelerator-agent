@@ -487,7 +487,64 @@ TRACK, LINE=Cell, BEAM=Beam1,
 ENDTRACK;
 ```
 
-`RUN` in current OPALX **does not accept** `BEAM`, `BEAMS`, `SOURCES`, or `DISTRIBUTION`; these connect through `TRACK` and `BEAM.SOURCES`. `RUN.METHOD="PARALLEL-T"` is legacy syntax, not the current method. Some `TRACK` options (e.g., `TIMEINTEGRATOR`) are parsed for compatibility but do not select the current parallel particle integration kernel. Ring/COF/spectral-tune options require their own documentation. (See [tracking](https://opalx-project.github.io/opalx-manual/user-guide/tracking.html).)
+`RUN` in current OPALX **does not accept** `BEAM`, `BEAMS`, `SOURCES`, or `DISTRIBUTION`; these connect through `TRACK` and `BEAM.SOURCES`. `RUN.METHOD="PARALLEL-T"` is legacy syntax, not the current method. Some `TRACK` options (e.g., `TIMEINTEGRATOR`) are parsed for compatibility but do not select the current parallel particle integration kernel. For COF use §10.1 below; other ring/spectral-tune options require their own documentation. (See [tracking](https://opalx-project.github.io/opalx-manual/user-guide/tracking.html).)
+
+### 10.1 Closed-orbit finder (COF)
+
+`COF` finds a fixed-energy closed orbit of a static magnetic `RING`. It is a
+standalone command, outside `TRACK`. Use it when requested by the specification;
+do not add a particle distribution, emission sources, self-field solver or
+`TRACK` block to a COF-only input. Ring geometry still needs explicit placed
+elements and end-to-start closure (§6). Preserve global `REAL P0` for normalized
+magnet strengths (§4) and an explicit reference state on the beam.
+
+The following fragment assumes a previously defined `LATTICE: RING=(...)` and
+`REAL P0=0.2505104781131461;` before the magnets. Its numerical settings are an
+example from the DBA COF fixture, not universal defaults:
+
+```opal
+BEAM1: BEAM, PARTICLE=ELECTRON, NALLOC=1,
+    SOURCES="UNUSED", CHARGE=-1, PC=P0;
+ic: COF, LINE=LATTICE, BEAM=BEAM1,
+    DT=5e-12, MAXSTEPS=20000, MAXPATH=35, TIMEINTEGRATOR="DOP853",
+    X=0, PX=0, Y=0, PY=0,
+    FDSTEP={3e-5,0.014707103299124946,3e-5,0.014707103299124946},
+    SCALES={1,490.23677597553325,1,490.23677597553325},
+    OUTPUT="closed-orbit.json";
+QUIT;
+```
+
+Here `SOURCES="UNUSED"` is the fixture's unused source placeholder; COF uses the
+beam reference state and does not sample a macroparticle distribution.
+
+| Attribute | Meaning / units |
+|---|---|
+| `LINE`, `BEAM` | Required defined `RING` and `BEAM`; beam must explicitly set `PC`, total `ENERGY` [GeV], or `GAMMA` |
+| `DT`, `TIMEINTEGRATOR` | Positive ray timestep [s]; integrator supports `BORIS`, `LF2`, `RK4`, `DOP853` |
+| `MAXSTEPS`, `MAXPATH` | Positive integer one-return step budget; explicitly required positive return-search path bound [m] |
+| `X`, `PX`, `Y`, `PY` | Initial section coordinates in order `(x, px, y, py)`; positions [m], mechanical momenta [p/(mc)], not slopes |
+| `FDSTEP`, `SCALES` | Exactly four positive values in that coordinate order; absolute central-difference perturbations and solver coordinate scales |
+| `XTOL`, `PTOL`, `MAXIT` | Solver position [m] and momentum [p/(mc)] residual/correction tolerances; positive integer Newton iteration budget |
+| `SECTION` | Optional six-value global `X,Y,Z,THETA,PHI,PSI` [m, rad]; defaults to ring frame |
+| `OUTPUT` | Optional exact JSON filename; required to obtain JSON and existing files are rejected |
+
+The implemented solver uses `METHOD="NEWTON"`, `DIMENSION=4` and
+`JACOBIAN="CENTRAL"`. Preserve requested seeds, tolerances and perturbations;
+record derived momentum perturbations separately from slopes. The
+`LINEARTRANSFERMAP*` options configure a separate element-map builder, not the
+COF Jacobian or its integrator. This COF mode excludes RF, self-fields, beam
+global processes and restart mode; it does not establish six-dimensional or
+subsequent particle-tracking closure.
+
+`OUTPUT` provides the scientific COF JSON (orbit, closure residual, one-turn
+map and reported stability diagnostics). OPALX also prints execution diagnostics
+to stdout/stderr. COF-only input does not require `.stat` or HDF5 particle dumps;
+no Python wrapper or analytic reference is needed to execute or inspect it.
+
+Source basis: inspected OPALX
+[`CofCmd.cpp` at a5445ca](https://github.com/OPALX-project/OPALX/blob/a5445ca986e908b5b086d6576a9a9ea3aeee16bc/src/Track/CofCmd.cpp)
+and the local `opalx-simulations/dba-cof-1/cof.in` fixture. These describe the
+COF interface; availability in the execution image must be established separately.
 
 ## 11. Runtime options and diagnostics
 

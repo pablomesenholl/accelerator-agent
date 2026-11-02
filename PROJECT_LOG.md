@@ -139,5 +139,8 @@ Project Log
 	Create a full first version beam-analyzer skill, including references, plot_style.py and OPALX logo
 	Test it once: works put generated stuff all over the place
 2.11.26:
+	Full test of dba cof benchmark done: missed aperture definitions for drift and quadrupole
 	Update docker image for OPALX with parser-only feature
+	Watch lecture 'transverse beam dynamics 2'
+	
 	

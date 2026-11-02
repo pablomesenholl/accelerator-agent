@@ -36,25 +36,28 @@ Use descriptive, stable filenames; do not silently overwrite a previous analysis
 
 Before writing analysis code, read the [Postprocess API](references/postprocess-api.md) for reader, calculation, validation, and export usage.
 
-1. Confirm the results directory exists and identify relevant files using `discover_run` and `select_file`. Inspect available `.stat` statistics and HDF5 snapshot steps with `read_stat` and `list_snapshots` as needed. Never guess a file, step number, or column name.
+1. Confirm the results directory exists and identify relevant files using `discover_run` and `select_file`. Inspect available `.stat` statistics and HDF5 snapshot steps with `read_stat` and `list_snapshots` as needed; read COF JSON with `read_closed_orbit`. Never guess a file, step number, or column name.
 2. Check run/job completion separately if Magnus result information is available; the existence of data files does not prove a successful simulation.
-3. Use `validate_run_files` with requirements appropriate to the task (e.g., statistics-only analysis need not require snapshots). Run `validate_statistics` and/or `validate_snapshot` on data actually used. Inspect `issues`, `checks`, and `skipped`, not just `is_valid`.
+3. Use `validate_run_files` with requirements appropriate to the task (e.g., statistics-only analysis need not require snapshots). For COF-only results use `required=("closed_orbits",)`. Run `validate_statistics`, `validate_snapshot` or `validate_closed_orbit` on data actually used. Inspect `issues`, `checks`, and `skipped`, not just `is_valid`.
 
 ### 2. Choose the analysis
 
 Before calculating or interpreting particle observables, read [Physics conventions](references/physics-conventions.md) for coordinate frames, momentum conventions, definitions, and interpretation limits.
 
 - **Specific request:** prioritize exactly what the user asks. Select additional diagnostics only if useful to answer it; keep them clearly distinguished.
-- **Open-ended request:** start with a compact baseline, insofar as validated data permit:
+- **Open-ended request with statistics or particle outputs:** start with a compact baseline, insofar as validated data permit:
   - RMS horizontal/vertical beam sizes versus path length (`s`), normally from `.stat`.
   - Normalized transverse RMS emittance versus `s` where enough particle snapshots are available.
   - Horizontal/vertical phase-space distributions from the last available snapshot; call it an exit snapshot only if its location is verified. Use `(x, x')` / `(y, y')` only if the frame is verified, otherwise use explicitly labeled stored position/momentum coordinates.
+- **COF-only results:** summarize reported convergence, closure residuals with their units, the transfer map and available stability diagnostics. Use only requested acceptance criteria or comparisons; select tables or plots that help interpret the available data. Particle envelopes, emittance histories and phase-space distributions are unavailable without corresponding particle outputs.
 - Adapt plots to the physics model (e.g., centroid motion, losses, energy evolution, comparisons), and omit diagnostics that are unavailable or misleading. Do not generate a large fixed plot catalog.
 - Prefer `.stat` for high-resolution reported histories and HDF5 snapshots for particle-level distributions and newly calculated observables. Do not present sparse snapshot histories as dense trajectories.
 
 ### 3. Calculate with the Python library
 
 Use existing `postprocess` readers, calculations, validations, and exporters rather than reimplementing centroids, spreads, covariance matrices, emittances, or Twiss parameters. Follow its status and unit metadata.
+
+For COF data, use `validate_closed_orbit` for integrity and convergence; require stability or closure bounds only when specified by the task. Preserve reported values and section-frame metadata in exports. A COF transfer map is not a covariance or particle snapshot; do not pass it to `analyze_snapshot` or infer particle emittances from it.
 
 Call `analyze_snapshot(snapshot)` for raw moments and supported normalized projections. **Only** pass `longitudinal_axis="z"` to `analyze_snapshot`, `validate_snapshot`, and `validate_analysis` after verifying the common coordinate frame and positive longitudinal momenta; it enables slope-based geometric emittance and Twiss quantities, not longitudinal Twiss. For curved lattices or ambiguous frames, do not assert this convention. Compare reported and calculated diagnostics with `compare_diagnostics` only when its frame/population matching assumptions and time/path alignment are verified.
 

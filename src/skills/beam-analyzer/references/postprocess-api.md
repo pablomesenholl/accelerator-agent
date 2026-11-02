@@ -174,13 +174,12 @@ snapshot or covariance. Do not apply `analyze_snapshot` to it.
 `validate_closed_orbit(orbit, require_stable=False, position_atol=None,
 momentum_atol=None)` checks numeric integrity, metadata and convergence.
 Optional closure bounds are strict absolute bounds in m and p/(mc), respectively.
-DBA uses `require_stable=True`, `position_atol=1e-7`, `momentum_atol=1e-7`.
+Set stability requirements and closure bounds from the task; no benchmark-specific
+threshold is applied by default.
 Reported stability is not independently recomputed. Inspect skipped checks;
-validation alone does not establish map accuracy against analytic optics.
+validation alone does not independently establish physical accuracy.
 
 `to_summary(orbit, validation=report)` and `write_json` preserve all small COF
 arrays and source metadata. No DataFrame adapter or slope conversion is implicit.
-For this DBA fixture, the separate offline checker
-`tests/postprocess/check_dba.py` compares `T^-1 M T` with the analytic transverse
-slope map, using `p0_mc` explicitly recovered from the run log; see the
-[acceptance documentation](../../../../tests/postprocess/README.md).
+COF JSON is sufficient for these APIs; no separate log file, Python wrapper or
+analytic reference is required. Additional scientific comparisons are task-specific.
