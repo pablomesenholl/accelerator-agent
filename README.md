@@ -54,6 +54,17 @@ it, use the activated environment's `python` and `magnus` commands directly;
 `uv sync --locked` restores the locked SDK release. The backend configuration
 and data are shared across Python environments.
 
+## Core OPALX workflow
+
+The workflow has four stages: [input generation](src/skills/lattice-generator/SKILL.md),
+[validation](src/skills/lattice-validator/SKILL.md),
+[simulation](src/skills/opalx-simulator/SKILL.md) and
+[analysis](src/skills/beam-analyzer/SKILL.md).
+
+Validation includes an OPALX parser-only syntax check and a review of the setup,
+requested parameters and physical consistency. All checks must pass before
+simulation. Follow the linked skills for commands and reporting instructions.
+
 ## Standalone Python agent
 
 The standalone Google ADK + LiteLLM CLI defaults to local Ollama `qwen3.5:2b`,

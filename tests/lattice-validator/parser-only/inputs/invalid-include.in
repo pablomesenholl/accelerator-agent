@@ -1,0 +1,3 @@
+// The parser must report the error inside this included FODO variant.
+CALL, FILE="invalid-attribute.in";
+QUIT;

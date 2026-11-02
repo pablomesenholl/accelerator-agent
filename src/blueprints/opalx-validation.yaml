@@ -1,0 +1,35 @@
+id: opalx-validation
+title: OPALX Syntax Validation
+description: Parse an OPALX input file or bundle without executing simulations.
+
+code: |
+  Simulation = Annotated[FileSecret, {
+      "label": "Simulation Input",
+      "description": "OPALX input file or directory containing the input and supporting files.",
+  }]
+
+  InputFile = Annotated[str, {
+      "label": "Input File",
+      "description": "Main OPALX input path relative to the uploaded bundle.",
+      "allow_empty": False,
+  }]
+
+  def blueprint(simulation: Simulation, input_file: InputFile):
+      safe_simulation = simulation.replace("'", "'\\''")
+      safe_input_file = input_file.replace("'", "'\\''")
+      submit_job(
+          task_name="[Blueprint] OPALX Syntax Validation",
+          description=f"Parser-only validation of `{input_file}` using OPALX serial CPU.",
+          namespace="pablomesenholl",
+          repo_name="accelerator-agent",
+          entry_command=(
+              "python3 scripts/run_opalx_validation.py "
+              f"--input_secret '{safe_simulation}' --input_file '{safe_input_file}'"
+          ),
+          container_image="docker://opalx:serial",
+          gpu_type="cpu",
+          gpu_count=0,
+          cpu_count=1,
+          memory_demand="4G",
+          job_type=JobType.A2,
+      )

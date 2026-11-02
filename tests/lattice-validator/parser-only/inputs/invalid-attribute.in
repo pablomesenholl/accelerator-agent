@@ -1,0 +1,6 @@
+// FODO variant: an unknown RUN attribute must be rejected.
+CALL, FILE="fodo.in";
+TRACK, LINE=Cell, BEAM=Protons;
+  RUN, METHOD=PARALLEL, FIELDSOLVER=NoSC, TYPO=1;
+ENDTRACK;
+QUIT;

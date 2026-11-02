@@ -9,6 +9,7 @@ output/<run-id>/
 ├── progress/
 │   ├── generation.md               # Parameters, derivations and assumptions
 │   ├── validation.md               # Checks, status and handoff decision
+│   ├── native-parser-<job-id>.json  # Native syntax result, diagnostics and provenance
 │   ├── simulation.md               # Job ID, execution and retrieval status
 │   └── ...                         # Saved execution logs and other stage reports
 ├── results/                        # Retrieved raw simulation bundle
@@ -35,6 +36,9 @@ output/<run-id>/
 - Save stage reports, job IDs, completion/failure status and saved execution logs
   in `progress/`. Update status when continuing a stage; preserve prior attempts'
   evidence under distinct filenames rather than overwriting it.
+- Keep parser-only validation results in `progress/native-parser-<job-id>.json`,
+  linked from `validation.md`. Parser-only validation does not produce a
+  simulation-results bundle or require a `results/` directory.
 - For each new analysis, choose a unique analysis ID and create
   `analysis/<analysis-id>/` with the structure above. Reuse the run ID when
   analyzing that run's results. For external existing results, create a run

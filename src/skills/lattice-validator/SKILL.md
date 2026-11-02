@@ -33,10 +33,11 @@ Save the validation report to `output/<run-id>/progress/validation.md` and retur
 - **Status:** `PASS`, `FAIL`, or `INCONCLUSIVE`.
 - **Validated input:** simulation path and relative main `.in` path.
 - **Checks performed:** which validation layers completed and their outcomes.
+- **Native parser evidence:** Magnus job ID and the saved structured result, including input digest, command, OPALX version/revision, exit code and diagnostics.
 - **Issues:** errors and warnings, with file/statement location and suggested correction where possible.
 - **Handoff decision:** whether the input may proceed to `opalx-simulator`.
 
-`PASS` means all required checks completed without blocking errors; it does **not** guarantee that tracking will succeed or that simulation results will be physically correct. `FAIL` means a blocking problem was found. `INCONCLUSIVE` means required checks could not be completed. Only `PASS` permits automatic simulation handoff.
+`PASS` means all four validation layers passed without blocking errors; it does **not** guarantee that tracking will succeed or that simulation results will be physically correct. `FAIL` means a blocking problem was found. `INCONCLUSIVE` means required checks could not be completed. Only `PASS` permits automatic simulation handoff; skipped native parsing cannot establish `PASS`.
 
 ## Workflow
 
@@ -48,23 +49,47 @@ Do not change the input files during validation.
 
 ### Step 2: Validate syntax using OPALX (Layer 1)
 
-This step can be skipped for now as a parser only version of OPALX is not implemented yet.
-
-(Invoke the planned **parser-only OPALX validation** through the `opalx-validation` Magnus blueprint. This blueprint is expected to parse the complete input without executing particle tracking.
-
-Before invocation, confirm that the blueprint is registered and inspect its actual parameter schema:
+Native parser-only validation is required. Use the `magnus` skill to inspect
+the registered interface and submit the unchanged input bundle:
 
 ```bash
 magnus blueprint schema opalx-validation
+magnus run opalx-validation -- --simulation output/<run-id>/inputs --input_file main.in
 ```
 
-Pass the prepared simulation and main input path according to that schema. Use the `magnus` skill to examine the job result and OPALX parser diagnostics, including exit status and error locations.
+Replace the example paths with the prepared input. The blueprint accepts
+`simulation` and `input_file`; it returns a structured result through Magnus,
+without an output-directory argument or a simulation-output download.
+Its dedicated runner invokes `opalx --parse-only --input <input_file> --info 2`.
 
-- If parsing fails, record the syntax errors and mark validation `FAIL`.
-- If the blueprint is unavailable, fails operationally, or does not establish that the full input was parsed, mark validation `INCONCLUSIVE` unless another check already establishes `FAIL`.
-- Do **not** substitute a normal OPALX simulation run for parser-only validation.
+Inspect the job result and logs, not just the Magnus job completion state:
 
-**Implementation dependency:** The OPALX parser-only feature and corresponding Magnus blueprint must be implemented and registered before this layer can pass.)
+- **Layer 1 `PASS`:** the result has `status="PASS"`, `success=true`,
+  `mode="parse-only"`, `returncode=0`, and the exact diagnostic line
+  `Syntax validation succeeded (simulation commands skipped).`. Confirm the
+  command uses `--parse-only` and the returned `input_file` matches the submitted
+  relative path. Accept the evidence only for the unchanged submitted bundle;
+  retain its `input_digest` and rerun validation after any input or supporting-file change.
+- **Layer 1 `FAIL`:** the runner reports `status="FAIL"` with a nonzero exit
+  code and explicit parser-error diagnostics. Return these to `lattice-generator`.
+- **Layer 1 `INCONCLUSIVE`:** the result is missing or inconsistent, the runner
+  reports `INCONCLUSIVE`, or the blueprint/image is unavailable or incompatible.
+  Startup failures, timeouts and unclassified errors do not establish a syntax error.
+
+Save the structured result, including diagnostics and provenance, to
+`output/<run-id>/progress/native-parser-<job-id>.json`; record its path and the
+job ID in `progress/validation.md`. Preserve earlier attempts' evidence.
+If Layer 1 is unavailable or inconclusive, the overall result is `INCONCLUSIVE`
+unless another layer establishes `FAIL`; do not hand off to simulation.
+Never substitute normal tracking or a closed-orbit solve for parser-only validation.
+
+This mode checks syntax along the input-processing path, including reached
+`CALL` files and `TRACK` blocks through `ENDTRACK`, while suppressing simulation
+commands such as `RUN` and `COF`. It follows normal input control flow, so a pass
+does not establish that every unused macro or unselected branch is valid.
+It does not resolve runtime beam/line/solver references, load field maps or
+particle distributions, or establish physical validity. Continue with Layers 2–4
+even after a native syntax pass.
 
 ### Step 3: Check structural and semantic consistency (Layer 2)
 
@@ -93,13 +118,13 @@ Treat unusual but intentional configurations as potentially valid. Do not requir
 
 ### Step 6: Report and hand off
 
-Summarize each layer's result and classify issues as **blocking errors** or **warnings**. Return `PASS` only when required validation is complete and no blocking issue remains.
+Summarize all four layers and classify issues as **blocking errors** or **warnings**. Return `PASS` only when every layer is `PASS` and no blocking issue remains. A blocking error in any layer makes the overall result `FAIL`; otherwise any incomplete or inconclusive layer makes it `INCONCLUSIVE`.
 
 For `PASS`, return the unchanged input paths for the `opalx-simulator` skill. For `FAIL` or `INCONCLUSIVE`, do not launch the simulation; report the problem and the next action needed.
 
 ## Usage
 
-Invoke this skill after `lattice-generator` prepares a simulation and before `opalx-simulator` runs it. Use the same `simulation` and `input_file` identifiers across the handoff. The exact `opalx-validation` command arguments must be taken from its registered Magnus schema once available.
+Invoke this skill after `lattice-generator` prepares a simulation and before `opalx-simulator` runs it. Use the same `simulation` and `input_file` identifiers across the handoff. Confirm the registered `opalx-validation` schema before submission.
 
 ## Error Handling
 
@@ -121,7 +146,7 @@ Validate a generated FODO simulation directory. Confirm that native parsing succ
 
 ### Invalid reference in a lattice
 
-If the input refers to an undefined element or beamline, return `FAIL` with the relevant location and a suggested correction. Ask `lattice-generator` to fix the reference and repeat validation; do not edit the file in this skill.
+An unresolved runtime beam, beamline or solver reference may pass native syntax parsing. Detect it in Layer 2 and return `FAIL` with the relevant location and a suggested correction. Ask `lattice-generator` to fix the reference and repeat validation; do not edit the file in this skill.
 
 ## References and Examples
 

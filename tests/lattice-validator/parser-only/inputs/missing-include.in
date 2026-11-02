@@ -1,0 +1,4 @@
+// FODO variant: parsing cannot complete without the requested include.
+CALL, FILE="fodo.in";
+CALL, FILE="missing-fodo.in";
+QUIT;

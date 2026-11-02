@@ -50,6 +50,8 @@ Confirm that the requested OPALX simulation input exists.
 
 If a simulation directory is provided, identify the main OPALX `.in` file and confirm that required supporting files are present. Use its path relative to the simulation directory as `input_file`.
 
+Before submission, require an overall `PASS` from [lattice-validator](../lattice-validator/SKILL.md) for this unchanged input bundle and relative `input_file`. The report must include native parser evidence (job ID and input digest) and passing structural, specification and physics checks. A native syntax `PASS` alone is insufficient. If validation is missing, failed or inconclusive, return to `lattice-validator` before submitting; any input or supporting-file change requires revalidation.
+
 Do not rewrite or alter the physics configuration unless the user explicitly asks for a change. Input generation and modification belong to the corresponding model/lattice skill.
 
 ### Step 2: Prepare the blueprint invocation

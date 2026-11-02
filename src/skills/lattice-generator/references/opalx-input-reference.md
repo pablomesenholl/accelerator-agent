@@ -65,6 +65,31 @@ Arithmetic includes `+`, `-`, `*`, `/`, `^`, parentheses and documented mathemat
 - Use `VALUE, {...};` or comments only when useful; neither replaces defining a beam or tracker.
 - Current **OPALX** syntax takes precedence over historical **OPAL** examples in the same manual (see §13).
 
+### 3.3 Parser-only mode (validation stage)
+
+The `lattice-validator` stage uses the CLI command below; it is not an OPALX
+input statement and is not executed by `lattice-generator`:
+
+```bash
+opalx --parse-only --input main.in --info 2
+```
+
+A native syntax pass requires exit code zero and the exact output line
+`Syntax validation succeeded (simulation commands skipped).`.
+The mode processes reached `CALL` files and input control flow, parses `TRACK`
+blocks through `ENDTRACK`, and suppresses simulation commands including `RUN`
+and `COF`. It does not generate tracking or closed-orbit output files.
+
+Parsing follows normal input control flow; it does not establish that unused
+macros or unselected branches are valid. It does not resolve runtime beam/line/solver
+references, load field maps or particle distributions, or establish physical validity.
+Structural, specification and physics review remain separate requirements.
+
+Use the dedicated `opalx-validation` Magnus blueprint for backend execution.
+See [lattice-validator](../../lattice-validator/SKILL.md) for result interpretation,
+provenance and handoff policy. Unsupported images or unavailable validation
+backends are inconclusive; normal simulation is not a parser-validation substitute.
+
 ## 4. Units and reference-particle conventions
 
 OPALX uses SI internally, but input **attributes mix SI, accelerator, and normalized units**. This table is a practical selection; consult the attribute's own documentation for others. (See [conventions](https://opalx-project.github.io/opalx-manual/user-guide/conventions/index.html), [elements](https://opalx-project.github.io/opalx-manual/user-guide/elements.html), [beam definitions](https://opalx-project.github.io/opalx-manual/user-guide/beam.html) and [beam distributions and sources](https://opalx-project.github.io/opalx-manual/user-guide/beam-distributions.html).)

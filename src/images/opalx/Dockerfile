@@ -18,9 +18,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Download OPALX source
+# Download OPALX source from my source
+ARG OPALX_REPOSITORY=https://github.com/pablomesenholl/OPALX.git
+ARG OPALX_REVISION=cb3b8ceea29645c9533233c3f6f14c3410c2b263
+
 WORKDIR /opt
-RUN git clone --depth 1 https://github.com/OPALX-project/OPALX.git
+RUN git init OPALX \
+    && cd OPALX \
+    && git remote add origin "${OPALX_REPOSITORY}" \
+    && git fetch --depth 1 origin "${OPALX_REVISION}" \
+    && git checkout --detach FETCH_HEAD
 
 # Configure and build a CPU serial Release version
 WORKDIR /opt/OPALX

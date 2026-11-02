@@ -1,0 +1,6 @@
+// FODO variant: syntax validation does not resolve runtime references.
+CALL, FILE="fodo.in";
+TRACK, LINE="missing", BEAM="missing";
+  RUN, METHOD=PARALLEL, FIELDSOLVER="missing";
+ENDTRACK;
+QUIT;

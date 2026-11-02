@@ -138,4 +138,6 @@ Project Log
 	Update magnus skill
 	Create a full first version beam-analyzer skill, including references, plot_style.py and OPALX logo
 	Test it once: works put generated stuff all over the place
+2.11.26:
+	Update docker image for OPALX with parser-only feature
 	

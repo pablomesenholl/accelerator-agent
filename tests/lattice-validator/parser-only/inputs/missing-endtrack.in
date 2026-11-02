@@ -1,0 +1,5 @@
+// FODO variant: QUIT must not substitute for ENDTRACK.
+CALL, FILE="fodo.in";
+TRACK, LINE=Cell, BEAM=Protons;
+  RUN, METHOD=PARALLEL, FIELDSOLVER=NoSC;
+QUIT;
