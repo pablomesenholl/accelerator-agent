@@ -9,7 +9,7 @@ description: Analyze retrieved OPALX beam-dynamics results with the postprocess 
 
 Analyze **existing, local OPALX results**. Read the local references at the workflow stages indicated below. Use the project's `.venv` Python interpreter (`uv sync --locked` if setup is needed).
 
-Respect the workflow boundary: the `opalx-simulator` skill handles Magnus execution and output retrieval. Do not submit simulations, modify source data or OPALX inputs, or change reusable library/skill code to fulfill an ordinary analysis request. A final LaTeX/PDF report belongs to a separate reporting skill.
+Respect the workflow boundary: the `opalx-simulator` skill handles Magnus execution and output retrieval. Do not submit simulations, modify source data or OPALX inputs, or change reusable library/skill code to fulfill an ordinary analysis request. A final LaTeX/PDF report belongs to [scientific-reporting](../scientific-reporting/SKILL.md).
 
 Before creating artifacts, follow the shared [run layout](../references/run-layout.md). Reuse the source run ID and choose a new analysis ID.
 
@@ -78,6 +78,11 @@ Save the script that produced the figures and ensure it can be rerun using local
 Write `analysis_summary.md` with: analysis objective; sources and selected snapshot(s); key measured/derived trends or values **with units**; notable anomalies; assumptions and validation failures/skips; and limits on interpretation. Keep it concise and separate observation from hypothesis. In `manifest.json`, record source paths, available job ID if known, analysis script, figure/data filenames, applied conversions, frame assumptions, validation outcome, and overall analysis status.
 
 Return links/paths to the generated figures and analysis directory and briefly explain the findings. Clearly state which requested tasks could not be completed and why; do not claim simulation success or physical validity solely from passing numerical checks.
+
+When a scientific report or full study is requested, hand the run and analysis
+directories, `analysis_summary.md`, `manifest.json`, and relevant figure/data
+paths to `scientific-reporting`. Keep the analysis summary and manifest as source
+artifacts; the user-facing report belongs in `scientific-reports/`.
 
 ## Failure handling
 

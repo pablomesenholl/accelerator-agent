@@ -13,6 +13,7 @@ output/<run-id>/
 │   ├── simulation.md               # Job ID, execution and retrieval status
 │   └── ...                         # Saved execution logs and other stage reports
 ├── results/                        # Retrieved raw simulation bundle
+├── scientific-reports/             # Scientific report sources, assets and PDFs
 └── analysis/<analysis-id>/
     ├── scripts/
     ├── figures/
@@ -44,6 +45,15 @@ output/<run-id>/
   analyzing that run's results. For external existing results, create a run
   directory for the new analysis and record the original source path without
   moving or duplicating the raw data.
+- Use [scientific-reporting](../scientific-reporting/SKILL.md) for user-facing
+  input-physics and completed-run reports in `scientific-reports/`. For iterative
+  studies, place one final study report in the initiating run's report directory
+  unless another location is specified, linking all covered runs. Keep LaTeX
+  sources, required assets, build notes, and successfully compiled PDFs there.
+  Record compilation failures explicitly when a PDF cannot be produced. Reuse
+  this directory when continuing a run and preserve earlier reports with distinct
+  filenames or versioned subdirectories. Stage records remain in `progress/`
+  and analysis summaries and manifests remain in `analysis/<analysis-id>/`.
 - Return the run directory and relevant artifact paths at each handoff. Never
   silently overwrite an existing input bundle, result directory or analysis;
   use a new run ID for a new simulation and a new analysis ID for reanalysis.

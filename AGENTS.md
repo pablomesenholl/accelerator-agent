@@ -14,7 +14,9 @@ of reusable skills, Magnus blueprints, and execution scripts.
   reusable skills, blueprints, or execution code unless development work is
   requested. Report framework defects separately.
 - Preserve the workflow boundaries: input generation, validation, simulation,
-  and analysis are separate stages. Report which stages actually completed.
+  analysis, and scientific reporting are separate stages. Reporting uses the
+  available stage artifacts; it does not execute simulations or beam analysis.
+  Report which stages actually completed.
 - Preserve supplied physics parameters, document derived quantities and
   assumptions, and use the local OPALX reference before consulting official
   documentation for missing or ambiguous features.

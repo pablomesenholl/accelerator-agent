@@ -100,6 +100,13 @@ If the user requested a specific diagnostic or downstream analysis, verify that 
 
 Update `progress/simulation.md` with the outcome and return the run directory, job ID and retrieved result path.
 
+For requested downstream analysis, hand these paths to
+[beam-analyzer](../beam-analyzer/SKILL.md). For a scientific report, pass the
+execution record and retrieved source paths to
+[scientific-reporting](../scientific-reporting/SKILL.md), together with analysis
+artifacts when available. Scientific interpretation and LaTeX/PDF report creation
+belong to those skills, rather than simulation execution.
+
 A failed OPALX run may still produce a retrieved simulation directory. Inspect it together with the Magnus logs when diagnosing failures.
 
 ## Usage

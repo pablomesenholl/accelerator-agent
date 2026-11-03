@@ -56,10 +56,20 @@ and data are shared across Python environments.
 
 ## Core OPALX workflow
 
-The workflow has four stages: [input generation](src/skills/lattice-generator/SKILL.md),
+The workflow has five stages: [input generation](src/skills/lattice-generator/SKILL.md),
 [validation](src/skills/lattice-validator/SKILL.md),
-[simulation](src/skills/opalx-simulator/SKILL.md) and
-[analysis](src/skills/beam-analyzer/SKILL.md).
+[simulation](src/skills/opalx-simulator/SKILL.md),
+[analysis](src/skills/beam-analyzer/SKILL.md) and
+[scientific reporting](src/skills/scientific-reporting/SKILL.md).
+
+For standalone runs, scientific reporting produces an input-physics report after
+generation and validation, then a completed report after simulation and analysis,
+as requested. Design, optimization, and numerical-tuning studies produce one final
+LaTeX/PDF report covering the iterations and relevant failed attempts; stage
+records provide the evidence without separate per-run reports unless requested.
+Stage records remain in `progress/`, analysis artifacts in `analysis/<analysis-id>/`, and
+user-facing scientific reports in `scientific-reports/`; see the
+[shared run layout](src/skills/references/run-layout.md).
 
 Validation includes an OPALX parser-only syntax check and a review of the setup,
 requested parameters and physical consistency. All checks must pass before

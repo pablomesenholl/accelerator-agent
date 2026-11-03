@@ -122,6 +122,14 @@ Summarize all four layers and classify issues as **blocking errors** or **warnin
 
 For `PASS`, return the unchanged input paths for the `opalx-simulator` skill. For `FAIL` or `INCONCLUSIVE`, do not launch the simulation; report the problem and the next action needed.
 
+For a requested scientific report or full study, pass the run directory,
+`progress/generation.md`, and validation evidence to
+[scientific-reporting](../scientific-reporting/SKILL.md) for the input-physics
+account. A standalone input report can be delivered before simulation; iterative
+studies retain this evidence for one final study report without separate per-run
+reports unless requested. Keep the validation record in `progress/`; scientific
+reporting does not replace validation or change its handoff decision.
+
 ## Usage
 
 Invoke this skill after `lattice-generator` prepares a simulation and before `opalx-simulator` runs it. Use the same `simulation` and `input_file` identifiers across the handoff. Confirm the registered `opalx-validation` schema before submission.

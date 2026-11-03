@@ -276,6 +276,8 @@ The resulting directory should be self-contained and portable to the OPALX execu
 
 Save the generation summary, including parameters, derivations and assumptions, to `output/<run-id>/progress/generation.md`. Report the run directory and generated simulation input to the user or calling agent.
 
+Keep this generation record in `progress/`. For a requested scientific report or full study, pass it with the input bundle to [scientific-reporting](../scientific-reporting/SKILL.md) after validation. That skill owns the input-physics account and report timing: iterative studies use this evidence for one final study report, without separate per-run reports unless requested.
+
 Provide:
 
 - The simulation directory path.
