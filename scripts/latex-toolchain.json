@@ -1,0 +1,14 @@
+{
+  "version": "0.17.0",
+  "platforms": {
+    "Linux-x86_64": {
+      "url": "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%400.17.0/tectonic-0.17.0-x86_64-unknown-linux-musl.tar.gz",
+      "sha256": "8533d07f9ccbd7a65824b9e0459041bca34af1eb33daba48f59215593753a3b7"
+    }
+  },
+  "bundle": {
+    "url": "https://data1b.fullyjustified.net/tlextras-2022.0r0.tar",
+    "identity": "6ffe055852f8faf66c0acbe1a7fb27f87b869a90bad1204f3bf4d9683f597c7c",
+    "index_sha256": "979a52178eb353c803dde1f66efe43ff7ae2ab908000323d4fef29e98e382ebd"
+  }
+}

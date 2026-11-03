@@ -63,7 +63,19 @@ Explain the evidence for any selected configuration, disclose differences that l
 
 Package each report's `.tex`, required figures, and bibliography using relative paths. Use distinct filenames or versioned subdirectories for delivered versions. Include covered run and analysis IDs, source artifact paths, and the compilation command in the build note.
 
-Compile at delivery with an available LaTeX toolchain, repeating as needed to resolve document errors or review findings. Inspect the PDF for readable figures and tables, unclipped content, correct equations and units, resolved citations and cross-references, and agreement with source values. Report any compilation or visual-review limitations.
+Compile using the project's pinned toolchain, choosing a new build directory for each attempt:
+
+```bash
+.venv/bin/python scripts/compile_report.py \
+  output/<run-id>/scientific-reports/report.tex \
+  --outdir output/<run-id>/scientific-reports/build-v1
+```
+
+Use bundled fonts and BibTeX-compatible bibliographies. See
+[compiler setup and troubleshooting](../../../README.md#latex-report-compilation)
+if needed.
+
+Compile at delivery, repeating as needed to resolve document errors or review findings. Inspect the PDF for readable figures and tables, unclipped content, correct equations and units, resolved citations and cross-references, and agreement with source values. Report any compilation or visual-review limitations.
 
 Return links to the report source and any successfully compiled PDF, briefly state the main scientific findings, and identify completed stages and remaining limitations. For an input-only report, make clear that simulation and results interpretation are pending.
 

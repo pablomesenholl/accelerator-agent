@@ -28,6 +28,7 @@ dist/
 /progress/
 .opalx_run/
 .cache/
+.tools/
 
 # Local credentials
 /.aws/

@@ -75,6 +75,44 @@ Validation includes an OPALX parser-only syntax check and a review of the setup,
 requested parameters and physical consistency. All checks must pass before
 simulation. Follow the linked skills for commands and reporting instructions.
 
+## LaTeX report compilation
+
+Install the project-local compiler (currently Linux x86_64; requires `curl`):
+
+```bash
+.venv/bin/python scripts/setup_latex.py
+```
+
+The installer verifies the Tectonic release archive checksum and the versioned
+TeX bundle's index checksum and `SHA256SUM` identity, using the pins in
+`scripts/latex-toolchain.json`. The compiler, fetched TeX resources, and format
+caches live in `.tools/tectonic/` (ignored by Git), separately from `.venv`.
+Setup refuses to replace an existing installation. To update, edit and verify
+the pins, move the old installation aside, and rerun setup.
+
+Compile an existing report with a **new** build directory:
+
+```bash
+.venv/bin/python scripts/compile_report.py \
+  output/<run-id>/scientific-reports/report.tex \
+  --outdir output/<run-id>/scientific-reports/build-v1
+```
+
+Keep figures and bibliography paths relative to the source. Compilation checks
+the bundle identity and downloads only needed resources into the local cache;
+it does not download the full approximately 2.9 GB distribution. Initial builds
+need network access and can take longer while creating the LaTeX format.
+Subsequent builds can use `--offline`; a document requiring uncached resources
+will fail explicitly. Bundle identity is the distribution's own content identifier,
+not a checksum of the entire remote tar archive. Use bundled fonts for consistency
+across machines. This setup fixes the toolchain, but does not promise byte-identical
+PDFs across operating systems or source changes.
+
+The fresh build directory contains the PDF on success, TeX/BibTeX diagnostics,
+`compile.log`, and `build.json` with source/toolchain hashes, command, and status.
+Inspect warnings and the rendered PDF before delivery. Compilation does not run
+simulations or analysis. See [report compilation checks](tests/scientific-reporting/README.md).
+
 ## Standalone Python agent
 
 The standalone Google ADK + LiteLLM CLI defaults to local Ollama `qwen3.5:2b`,

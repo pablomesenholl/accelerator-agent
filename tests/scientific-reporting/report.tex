@@ -1,0 +1,39 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\title{Scientific reporting toolchain check}
+\author{accelerator-agent}
+\date{}
+\begin{document}
+\maketitle
+This document checks typesetting only; no simulation or beam analysis was run.
+
+\section{Equations and units}
+The Courant--Snyder ellipse~\cite{courant1958} is represented by
+\begin{equation}
+  \gamma x^2 + 2\alpha x x' + \beta x'^2 = \varepsilon,
+  \qquad \gamma = \frac{1+\alpha^2}{\beta}.
+  \label{eq:ellipse}
+\end{equation}
+Equation~\ref{eq:ellipse} and Table~\ref{tab:parameters} exercise cross-references.
+The values below are typesetting examples, not analysis results.
+\begin{table}[h]
+  \centering
+  \begin{tabular}{lll}
+    \toprule Quantity & Value & Unit \\
+    \midrule Reference energy & 10 & $\mathrm{MeV}$ \\
+    Length & 1 & $\mathrm{m}$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Example parameters with explicit units.}\label{tab:parameters}
+\end{table}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.3\textwidth]{../../src/skills/beam-analyzer/assets/OPALX-logo.png}
+  \caption{Existing project image included through a relative path.}
+\end{figure}
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}
