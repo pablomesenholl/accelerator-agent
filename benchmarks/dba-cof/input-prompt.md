@@ -21,4 +21,4 @@ Report the closed-orbit coordinates, convergence residuals, stability classifica
 
 If stability is not achieved, adjust the numerical solver parameters and try again.
 
-Make plots if appropriate.
+Make plots if appropriate. Do not inspect or copy an existing valid dba cof input for lattice generation.

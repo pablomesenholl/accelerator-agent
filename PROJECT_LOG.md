@@ -142,5 +142,10 @@ Project Log
 	Full test of dba cof benchmark done: missed aperture definitions for drift and quadrupole
 	Update docker image for OPALX with parser-only feature
 	Watch lecture 'transverse beam dynamics 2'
-	
+3.11.26:
+	Implement a first version of the scientific reporting skill with some tweaks
+	Full run of dba cof benchmark: mostly successful
+	Full run of a dba cof design test with selecting focusing strength: mostly successful
+	Start lecture 'transverse beam dynamics 3'
+	Add Latex compiler
 	

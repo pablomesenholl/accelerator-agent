@@ -41,7 +41,9 @@ Explain the scientific objective and configured model. Cover the lattice layout 
 
 Use a parameter table with units, distinguishing supplied values, derived quantities, and technical defaults. Explain documented derivations and their assumptions without changing supplied parameters. Consult the [local OPALX input reference](../lattice-generator/references/opalx-input-reference.md) before official documentation for unclear configuration semantics. Cite substantive theoretical and software claims.
 
-Where useful, explain established mathematical formulations and existing analytical proxies using [Mathematical model descriptions](references/mathematical-model-descriptions.md). That reference governs representation choices, conventions, approximations, and correspondence with the simulation. Summarize validation outcomes and unresolved issues; label unavailable results as pending or unavailable.
+Include a **Physical basis and model** section in every scientific report, assuming familiarity with basic mechanics and electromagnetism but no accelerator specialization. Read [Mathematical model descriptions](references/mathematical-model-descriptions.md) before writing it. Start with the study's accelerator-physics question and relevant model; explain unfamiliar accelerator concepts in words. Include foundational laws such as the Lorentz force only when they clarify a specific modeling choice or mechanism. Present relevant established governing equations with symbols and physical meaning defined, connecting them to this run's elements, parameters, included or omitted effects, and observables. State approximations explicitly; a generic equation without a connection to the setup is insufficient. Explain established formulations without performing new scientific calculations. If a suitable formulation cannot be established, identify the gap and provide the supported physical explanation.
+
+Summarize validation outcomes and unresolved issues; label unavailable results as pending or unavailable.
 
 ### 3. Complete the results report
 
@@ -76,6 +78,8 @@ Use bundled fonts and BibTeX-compatible bibliographies. See
 if needed.
 
 Compile at delivery, repeating as needed to resolve document errors or review findings. Inspect the PDF for readable figures and tables, unclipped content, correct equations and units, resolved citations and cross-references, and agreement with source values. Report any compilation or visual-review limitations.
+
+Before delivery, check that the theory explains the actual accelerator problem and its observables for a reader new to accelerator physics, and that central equations are displayed and easy to find. A generic foundational equation alone does not satisfy this check. Identify any missing mathematical account explicitly.
 
 Return links to the report source and any successfully compiled PDF, briefly state the main scientific findings, and identify completed stages and remaining limitations. For an input-only report, make clear that simulation and results interpretation are pending.
 

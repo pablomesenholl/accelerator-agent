@@ -5,6 +5,7 @@ All paths below are relative to the repository root; `output/` is not a filesyst
 
 ```text
 output/<run-id>/
+├── prompt/                         # User prompt used for this run
 ├── inputs/                         # Portable OPALX input bundle
 ├── progress/
 │   ├── generation.md               # Parameters, derivations and assumptions
@@ -22,10 +23,17 @@ output/<run-id>/
     └── manifest.json
 ```
 
-- At the first requested stage, choose a descriptive, filesystem-safe run ID.
-  Create a new `output/<run-id>/`; add a timestamp or suffix if that ID exists.
-  Pass the run ID and directory unchanged between stages. When explicitly
-  continuing an existing run, reuse its directory and preserve its artifacts.
+- At the first requested stage of a new physics run, create
+  `output/<descriptive-slug>-<YYYYMMDDTHHMMSSZ>/`, for example
+  `output/dba-cof-20261103T173126Z/`. Use a short lowercase description with
+  hyphens between words and the actual directory-creation time in UTC, to second
+  precision; `Z` denotes UTC. If the complete ID exists, append `-02`, `-03`,
+  etc. rather than overwriting it. Choose the ID once and pass it unchanged
+  between stages. Continuing a run, reanalyzing it, or generating its report
+  reuses that run's directory. A new simulation, including adjusted design or
+  numerical settings, requires a new run ID. Apply this convention prospectively;
+  preserve existing directories and references. Development-output directories
+  need not follow the physics-run naming convention.
 - Keep generated inputs, reports, saved logs, results and analysis artifacts
   inside that run directory. Put any additional overall summary or manifest
   at the run root. Create stage directories as needed; do not imply that an
@@ -57,3 +65,4 @@ output/<run-id>/
 - Return the run directory and relevant artifact paths at each handoff. Never
   silently overwrite an existing input bundle, result directory or analysis;
   use a new run ID for a new simulation and a new analysis ID for reanalysis.
+- Add the original user prompt to `prompt/` for reproducibility
