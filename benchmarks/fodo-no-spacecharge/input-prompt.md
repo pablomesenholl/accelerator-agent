@@ -7,6 +7,8 @@ Construct one FODO cell with:
 - Normalized quadrupole strengths: K1 = +1.5 m⁻² and −1.5 m⁻².
 - Total cell length: 2.0 m, starting at s = 0 m.
 
+The cell sequence should be: Focusing quadrupole, drift, defocusing quadrupole, drift.
+
 ### Proton beam and distribution
 
 Use a **250 MeV proton beam** with a bunch charge of 1 nC and **10,000 macroparticles**.

@@ -148,4 +148,11 @@ Project Log
 	Full run of a dba cof design test with selecting focusing strength: mostly successful
 	Start lecture 'transverse beam dynamics 3'
 	Add Latex compiler
-	
+4.11.26:
+	Update PR #647 
+	Get minimax up and running
+	Run fodo benchmark with minimax
+5.11.26:
+	Find issues from minimax fodo run and suggest fixes
+	Work on update slides for week 7
+	Finish transverse beam dynamics lecture 3 
