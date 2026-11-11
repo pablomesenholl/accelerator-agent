@@ -156,3 +156,13 @@ Project Log
 	Find issues from minimax fodo run and suggest fixes
 	Work on update slides for week 7
 	Finish transverse beam dynamics lecture 3 
+9.11.2026:
+	Plan rest of the work to complete semester project scope of accelerator agent: dba lattice, longitudinal beam dynamics, fodo with spacecharge, update skills according to minimax run, standardize runs, orchestrator skill etc.
+	Check hdf5, stat and own calculations of parameters, like emittance or centroids
+10.11.2026:
+	Manual fodo with spacecharge run including plots
+	Manual 10 cell fodo with spacecharge run with plots
+11.11.2026:
+	Verify multicell fodo spacecharge simulation behaviour
+	Update workflow according to minimax fodo run issues
+	

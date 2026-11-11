@@ -13,6 +13,8 @@ Respect the workflow boundary: the `opalx-simulator` skill handles Magnus execut
 
 Before creating artifacts, follow the shared [run layout](../references/run-layout.md). Reuse the source run ID and choose a new analysis ID.
 
+Follow the [default workflow scope](../references/workflow-scope.md). For an open-ended general run, complete the baseline below with supported numerical findings and limitations. Add analyses for specifically requested questions or material discrepancies; independent matching, analytical-model derivations and convergence studies are not default deliverables.
+
 ## Inputs and outputs
 
 - **Input:** a local simulation-results directory (normally retrieved through Magnus), plus any user-requested observables, plots, comparison runs, or analysis constraints.
@@ -75,9 +77,13 @@ Before creating figures, read the [Plotting guidelines](references/plotting-guid
 
 Save the script that produced the figures and ensure it can be rerun using local source paths. Export only useful derived tables or summaries, retaining the relevant unit/definition metadata (for example, the CSV sidecar or `series.attrs` metadata in JSON). Do not rely on pandas `.attrs` surviving CSV export.
 
+Supply key numerical results in structured exports with quantity definitions, units, selected locations or snapshots, and validity qualifications. Record the convention for any calculated change or comparison.
+
 Write `analysis_summary.md` with: analysis objective; sources and selected snapshot(s); key measured/derived trends or values **with units**; notable anomalies; assumptions and validation failures/skips; and limits on interpretation. Keep it concise and separate observation from hypothesis. In `manifest.json`, record source paths, available job ID if known, analysis script, figure/data filenames, applied conversions, frame assumptions, validation outcome, and overall analysis status.
 
 Return links/paths to the generated figures and analysis directory and briefly explain the findings. Clearly state which requested tasks could not be completed and why; do not claim simulation success or physical validity solely from passing numerical checks.
+
+The stage is complete when the requested or baseline diagnostics have been checked, readable figures and reproducible artifacts are saved, and material anomalies are resolved or explicitly qualified. Report unavailable diagnostics and their consequences without expanding into unrelated investigations.
 
 When a scientific report or full study is requested, hand the run and analysis
 directories, `analysis_summary.md`, `manifest.json`, and relevant figure/data

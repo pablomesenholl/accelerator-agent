@@ -18,6 +18,8 @@ Validation has four layers: native OPALX syntax validation, structural and seman
 
 Before writing reports, follow the shared [run layout](../references/run-layout.md) and retain the run ID supplied by the preceding stage.
 
+Follow the [default workflow scope](../references/workflow-scope.md). Complete the four validation layers and record the status and handoff decision. Additional matching, stability or optimization studies belong to separately requested physics or analysis work rather than basic validation; retain all required correctness checks.
+
 ## Inputs
 
 - `simulation` — path to a prepared OPALX `.in` file or simulation directory.
@@ -125,10 +127,10 @@ For `PASS`, return the unchanged input paths for the `opalx-simulator` skill. Fo
 For a requested scientific report or full study, pass the run directory,
 `progress/generation.md`, and validation evidence to
 [scientific-reporting](../scientific-reporting/SKILL.md) for the input-physics
-account. A standalone input report can be delivered before simulation; iterative
-studies retain this evidence for one final study report without separate per-run
-reports unless requested. Keep the validation record in `progress/`; scientific
-reporting does not replace validation or change its handoff decision.
+account. Deliver a separate input report before simulation only when requested;
+otherwise retain this evidence for the final workflow or study report. Keep the
+validation record in `progress/`; scientific reporting does not replace validation
+or change its handoff decision.
 
 ## Usage
 

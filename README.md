@@ -62,11 +62,15 @@ The workflow has five stages: [input generation](src/skills/lattice-generator/SK
 [analysis](src/skills/beam-analyzer/SKILL.md) and
 [scientific reporting](src/skills/scientific-reporting/SKILL.md).
 
-For standalone runs, scientific reporting produces an input-physics report after
-generation and validation, then a completed report after simulation and analysis,
-as requested. Design, optimization, and numerical-tuning studies produce one final
-LaTeX/PDF report covering the iterations and relevant failed attempts; stage
-records provide the evidence without separate per-run reports unless requested.
+Follow the [default workflow scope](src/skills/references/workflow-scope.md): run
+the requested stages and necessary prerequisites. A full workflow produces one
+final scientific report, normally at most about three pages, with numerical
+results in tables where useful. Many requested figures or explicit requests for
+additional reporting detail may justify extra pages; additional analysis is a
+separate request. Design, optimization, and numerical-tuning studies produce one
+final LaTeX/PDF report covering the iterations and relevant failed attempts.
+Stage records provide the evidence; separate input-stage or per-run scientific
+reports are produced only when requested.
 Stage records remain in `progress/`, analysis artifacts in `analysis/<analysis-id>/`, and
 user-facing scientific reports in `scientific-reports/`; see the
 [shared run layout](src/skills/references/run-layout.md).

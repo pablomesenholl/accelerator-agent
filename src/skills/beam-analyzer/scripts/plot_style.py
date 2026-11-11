@@ -105,10 +105,15 @@ def save_figure(
 
     logo_ax = _add_logo(fig, logo)
     try:
+        # An explicit list replaces Matplotlib's default bbox artists. Preserve
+        # them (including outside legends), then add the out-of-layout logo.
+        extra_artists = None
+        if logo_ax is not None:
+            extra_artists = [*fig.get_default_bbox_extra_artists(), logo_ax]
         for destination in (png, pdf):
             fig.savefig(
                 destination, dpi=dpi, bbox_inches="tight", pad_inches=0.08,
-                bbox_extra_artists=(logo_ax,) if logo_ax is not None else (),
+                bbox_extra_artists=extra_artists,
             )
     finally:
         if logo_ax is not None:

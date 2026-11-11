@@ -29,6 +29,7 @@ These are defaults, **not fixed constraints**. Choose a layout that makes the ph
 - Keep visual encodings and annotations concise; avoid duplicating information across title, legend, and caption.
 - Keep margins generous enough for labels, scientific notation, legends, colorbars, and the logo when used. Use `constrained_layout` or another tested layout method.
 - Put legends where they do not obscure data; move outside the axes when needed. Omit a legend for a single self-evident trace.
+- Prefer captions to long in-plot explanations; reserve space for shared legends in multi-panel figures.
 - Use Matplotlib's built-in mathtext by default; do not require an external LaTeX installation merely to draw plots.
 
 ## 3. Color and visual encoding
@@ -87,6 +88,7 @@ These are defaults, **not fixed constraints**. Choose a layout that makes the ph
 - Use the artifact layout and provenance requirements in `SKILL.md`; retain plotting configuration needed to regenerate figures.
 - Open or render each generated figure and verify: nonempty data; correct units; sensible limits; legible labels/legends; no clipped text, overlapping panels, or obscured data; and successful logo placement if used.
 - Fix layout failures before delivery. If an essential plotting assumption cannot be verified, omit the misleading figure and explain the limitation.
+- Batch necessary corrections after review. Check that important data remain interpretable; custom algorithms proving zero legend/data-point overlap are not required.
 
 ## 8. Styling helper usage
 
@@ -119,3 +121,34 @@ and saves both formats at 300 dpi by default (use at least 200 dpi for final PNG
 logo axes are removed after export so repeated saves do not accumulate logos.
 Record the helper and asset paths as dependencies in the analysis manifest, and
 close figures with `plt.close(fig)` when done.
+
+For an outside axes legend, let the tight export include it (keep its default
+`in_layout=True`):
+
+```python
+fig, ax = plt.subplots(figsize=(7, 4))
+# Plot labelled data and set axis labels with units here.
+ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1))
+save_figure(fig, analysis_dir / "figures" / "outside_legend")
+```
+
+For a shared legend below two panels, leave room for axis labels and collect
+handles from a panel containing all shared series:
+
+```python
+fig, axes = plt.subplots(1, 2, figsize=(7, 3))
+fig.subplots_adjust(bottom=0.30, wspace=0.40)
+# Plot labelled data and set axis labels with units here.
+handles, labels = axes[0].get_legend_handles_labels()
+fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, -0.02))
+save_figure(fig, analysis_dir / "figures" / "shared_legend")
+```
+
+The helper includes normal layout content and the optional logo in both exports;
+it does not choose legend positions. Inspect the saved layout at its intended
+display size. Run the synthetic export regression checks without OPALX:
+
+```bash
+MPLCONFIGDIR=/tmp/opalx-plot-style-tests-mpl \
+  .venv/bin/python -m unittest discover -s tests/beam-analyzer -v
+```

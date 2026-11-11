@@ -3,6 +3,10 @@
 Read this reference before creating artifacts for any accelerator workflow stage.
 All paths below are relative to the repository root; `output/` is not a filesystem-root directory.
 
+Use the [default workflow scope](workflow-scope.md) to select stages and reports.
+Stage records document evidence; a full workflow produces one final scientific
+report, with separate input-stage or per-run reports only when requested.
+
 ```text
 output/<run-id>/
 ├── prompt/                         # User prompt used for this run

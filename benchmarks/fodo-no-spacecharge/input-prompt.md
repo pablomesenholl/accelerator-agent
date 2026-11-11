@@ -30,4 +30,4 @@ Use a tracking timestep of 1 × 10⁻¹¹ s, a maximum of 2,000 steps, a phase-s
 
 ### Task
 
-Do a full analysis workflow of this lattice. Do not inspect or copy existing fodo examples in other subdirectories. 
+Do a full workflow of this lattice. Do not inspect or copy existing fodo examples in other subdirectories. 

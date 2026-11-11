@@ -17,6 +17,8 @@ Use the `magnus` skill for generic Magnus configuration, job management, status 
 
 Before creating artifacts, follow the shared [run layout](../references/run-layout.md) and retain the run ID supplied by the preceding stage.
 
+Follow the [default workflow scope](../references/workflow-scope.md). This stage ends with execution and retrieval evidence and the requested artifact paths, or an explicit failure status. Downstream analysis and reporting run only as part of the requested workflow.
+
 ## Inputs
 
 The `opalx-simulation` blueprint accepts:

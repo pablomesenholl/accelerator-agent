@@ -7,10 +7,12 @@ description: Produce LaTeX/PDF reports explaining OPALX inputs, assumptions, phy
 
 ## Scope
 
-Explain the configured physics, documented derivations, results, and their limitations using existing workflow artifacts. Choose the reporting mode:
+Explain the configured physics, documented derivations, results, and their limitations using existing workflow artifacts. Follow the [default workflow scope](../references/workflow-scope.md) and the requested report timing:
 
-- **Standalone run:** produce an input-physics report after generation and validation, then a completed report when simulation and analysis evidence is available, as requested.
+- **Standalone run:** for a full workflow, produce one final report using the available generation, validation, simulation and analysis evidence. Produce a separate input-physics report after generation and validation only when requested.
 - **Design, optimization, or numerical-tuning study:** when the study ends, produce one final report covering its iterations and relevant failed attempts, even if no acceptable configuration was found. Use stage records as evidence during the study; do not generate separate input-stage or per-run reports unless explicitly requested.
+
+For general runs, target a short scientific report of at most about three pages in total, including figures and references. Many requested figures or explicitly requested detail may justify additional pages. Prioritize the objective, essential configuration and physical model, numerical findings, selected figures, interpretation and material limitations. Link detailed stage evidence; do not add appendices by default to bypass the target or sacrifice readability or necessary qualifications to meet it.
 
 The `opalx-simulator` skill owns execution and retrieval; `beam-analyzer` owns analysis and figures. Reporting presents and interprets existing artifacts. Do not submit simulations, alter source inputs or results, or change reusable code. Do not derive new models for the setup, evaluate proxies, calculate new observables, or perform numerical comparisons; these belong to the physics or analysis stage.
 
@@ -41,13 +43,15 @@ Explain the scientific objective and configured model. Cover the lattice layout 
 
 Use a parameter table with units, distinguishing supplied values, derived quantities, and technical defaults. Explain documented derivations and their assumptions without changing supplied parameters. Consult the [local OPALX input reference](../lattice-generator/references/opalx-input-reference.md) before official documentation for unclear configuration semantics. Cite substantive theoretical and software claims.
 
-Include a **Physical basis and model** section in every scientific report, assuming familiarity with basic mechanics and electromagnetism but no accelerator specialization. Read [Mathematical model descriptions](references/mathematical-model-descriptions.md) before writing it. Start with the study's accelerator-physics question and relevant model; explain unfamiliar accelerator concepts in words. Include foundational laws such as the Lorentz force only when they clarify a specific modeling choice or mechanism. Present relevant established governing equations with symbols and physical meaning defined, connecting them to this run's elements, parameters, included or omitted effects, and observables. State approximations explicitly; a generic equation without a connection to the setup is insufficient. Explain established formulations without performing new scientific calculations. If a suitable formulation cannot be established, identify the gap and provide the supported physical explanation.
+Include a concise **Physical basis and model** section in every scientific report, assuming familiarity with basic mechanics and electromagnetism. Read [Mathematical model descriptions](references/mathematical-model-descriptions.md) before writing it. Connect the scientific question to the configured elements, included or omitted effects, and observables. Briefly define necessary accelerator concepts and select the established equations needed to explain the findings, defining their symbols and approximations. A generic equation without a connection to the setup is insufficient. Reserve extended tutorials and derivations for explicitly requested detail, using existing evidence without new scientific calculations. If a suitable formulation cannot be established, identify the gap and provide the supported physical explanation.
 
 Summarize validation outcomes and unresolved issues; label unavailable results as pending or unavailable.
 
 ### 3. Complete the results report
 
 Incorporate the input-physics account and select existing figures and tables that address the objective. Captions should explain observables, units, selected locations or snapshots, relevant conditions, and the supported findings. Trace figures and numerical claims to source artifacts.
+
+Prefer compact tables for comparable numerical results instead of scattering values through prose. Choose columns suited to the question, such as quantity, unit, initial/final location or value, and available change or comparison. For COF results, use convergence and closure quantities rather than imposing initial/final beam columns. Preserve source definitions, comparison conventions and validity qualifications; identify unavailable values explicitly. Use prose to explain the findings rather than repeat each entry, and do not calculate missing table values in this stage.
 
 Read the analyzer's [physics conventions](../beam-analyzer/references/physics-conventions.md) when interpreting observables. Preserve definitions, frames, units, population selections, and distinctions between OPALX-reported and calculated quantities. Discuss existing comparisons only when definitions and sampling conditions are compatible.
 
@@ -77,9 +81,9 @@ Use bundled fonts and BibTeX-compatible bibliographies. See
 [compiler setup and troubleshooting](../../../README.md#latex-report-compilation)
 if needed.
 
-Compile at delivery, repeating as needed to resolve document errors or review findings. Inspect the PDF for readable figures and tables, unclipped content, correct equations and units, resolved citations and cross-references, and agreement with source values. Report any compilation or visual-review limitations.
+Compile at delivery and inspect the PDF for readable figures and tables, unclipped content, correct equations and units, resolved citations and cross-references, and agreement with source values. Batch corrections and rebuild as needed for substantive errors or readability problems. Harmless formatting warnings alone do not require another build. Report any compilation or visual-review limitations.
 
-Before delivery, check that the theory explains the actual accelerator problem and its observables for a reader new to accelerator physics, and that central equations are displayed and easy to find. A generic foundational equation alone does not satisfy this check. Identify any missing mathematical account explicitly.
+Before delivery, check that the concise model account explains the actual accelerator problem and its observables, with central equations displayed where useful. Identify any missing mathematical account explicitly. The report is complete when its supported claims agree with the source evidence, the PDF compiles, and the content is readable without unresolved substantive errors; follow failure handling if these conditions cannot be met.
 
 Return links to the report source and any successfully compiled PDF, briefly state the main scientific findings, and identify completed stages and remaining limitations. For an input-only report, make clear that simulation and results interpretation are pending.
 

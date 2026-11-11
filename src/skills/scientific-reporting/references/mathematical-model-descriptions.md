@@ -12,6 +12,8 @@ Choose the representation that helps answer the scientific question:
 
 Use only the detail needed to explain the setup and findings. A Hamiltonian is optional; do not force dissipative or otherwise unsupported effects into a conservative single-particle model.
 
+For the default short report, give a concise model account and only the equations needed to interpret its findings. The formulations below are options, not a checklist to include in every report. Expand the exposition or documented derivations when specifically requested; preserve relevant conventions and limitations at either length.
+
 Display governing equations, central definitions, transfer matrices, and acceptance or stability criteria that carry the report's argument. Keep short symbols, parameter values, and incidental relationships inline. Use aligned displays for related equations, define symbols nearby, and number equations referenced later. Select equations for their role in explaining the study rather than meeting a fixed quota.
 
 ## 2. Define conventions
