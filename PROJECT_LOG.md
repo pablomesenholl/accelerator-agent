@@ -165,4 +165,11 @@ Project Log
 11.11.2026:
 	Verify multicell fodo spacecharge simulation behaviour
 	Update workflow according to minimax fodo run issues
-	
+12.11.2026:
+	Update run-layout to deal correctly with multi-run prompts
+	slice emittance analysis of 10 cell fodo with spacecharge: don't understand this yet though
+	Run benchmarks with codex with workflow updates
+	Run fodo with spacecharge benchmark with codex
+	Run fodo no-spacecharge with minimax: now takes 60 min
+13.11.2026:
+	Meeting: think about FODO with spacecharge as benchmark and maybe do more design oriented dba lattice

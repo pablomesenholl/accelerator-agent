@@ -15,7 +15,7 @@ The skill is responsible for simulation execution and result retrieval. It assum
 
 Use the `magnus` skill for generic Magnus configuration, job management, status checks, output retrieval, and backend error recovery.
 
-Before creating artifacts, follow the shared [run layout](../references/run-layout.md) and retain the run ID supplied by the preceding stage.
+Before creating artifacts, follow the shared [run layout](../references/run-layout.md) and retain the parent run and simulation IDs supplied by the preceding stage. Relative `progress/` paths below belong to that simulation.
 
 Follow the [default workflow scope](../references/workflow-scope.md). This stage ends with execution and retrieval evidence and the requested artifact paths, or an explicit failure status. Downstream analysis and reporting run only as part of the requested workflow.
 
@@ -25,7 +25,7 @@ The `opalx-simulation` blueprint accepts:
 
 - `simulation` — required Magnus `FileSecret` containing either a single OPALX input file or a simulation directory with the input file and any required auxiliary files.
 - `input_file` — required name or relative path of the OPALX `.in` file to execute inside the simulation input.
-- `output` — local path where Magnus downloads the completed simulation directory. Use `output/<run-id>/results/` explicitly; `opalx-output` is the blueprint default only.
+- `output` — local path where Magnus downloads the completed simulation directory. Use `output/<run-id>/simulations/<simulation-id>/results/` explicitly; `opalx-output` is the blueprint default only.
 
 `input_file` must remain inside the uploaded simulation input. For a single-file upload, it must identify that uploaded file.
 
@@ -72,22 +72,22 @@ magnus blueprint schema opalx-simulation
 
 ### Step 3: Run the simulation
 
-Submit the simulation through the `opalx-simulation` blueprint (replace `my-run` with the shared run ID in these examples):
+Submit the simulation through the `opalx-simulation` blueprint (replace `my-run` and `001-main` with the parent run and selected simulation IDs):
 
 ```bash
 magnus run opalx-simulation -- \
-  --simulation output/my-run/inputs \
+  --simulation output/my-run/simulations/001-main/inputs \
   --input_file main.in \
-  --output output/my-run/results
+  --output output/my-run/simulations/001-main/results
 ```
 
 For a single-file simulation, `--simulation` points to the `.in` file and `--input_file` is that file's name.
 
 For a simulation directory, `--simulation` points to the directory and `--input_file` is the `.in` file path relative to that directory.
 
-Always pass `output/<run-id>/results/` as `--output`; do not rely on the blueprint default. Use a new run ID for a new simulation rather than overwriting retrieved results.
+Always pass `output/<run-id>/simulations/<simulation-id>/results/` as `--output`; do not rely on the blueprint default. Use a new simulation ID within the same parent run for a deliberate new execution; reconnecting or recovering retrieval retains the existing simulation and job ID.
 
-Capture the job ID printed by Magnus in `output/<run-id>/progress/simulation.md`. Record execution and retrieval status, including failures, there; place saved execution logs alongside it.
+Capture the job ID printed by Magnus in `output/<run-id>/simulations/<simulation-id>/progress/simulation.md` and the parent study index at submission. Record execution and retrieval status, including failures, there; place saved execution logs alongside the simulation record.
 
 ### Step 4: Check the result and retrieve outputs
 
@@ -100,7 +100,7 @@ Inspect the Magnus result and confirm:
 
 If the user requested a specific diagnostic or downstream analysis, verify that the corresponding output file exists before handing the result to another skill.
 
-Update `progress/simulation.md` with the outcome and return the run directory, job ID and retrieved result path.
+Update the simulation's `progress/simulation.md` and the parent `progress/study.md` with the outcome and artifact links. Return the parent run directory, simulation ID/directory, job ID and retrieved result path.
 
 For requested downstream analysis, hand these paths to
 [beam-analyzer](../beam-analyzer/SKILL.md). For a scientific report, pass the
@@ -117,18 +117,18 @@ Single-file simulation:
 
 ```bash
 magnus run opalx-simulation -- \
-  --simulation output/my-run/inputs/fodo.in \
+  --simulation output/my-run/simulations/001-main/inputs/fodo.in \
   --input_file fodo.in \
-  --output output/my-run/results
+  --output output/my-run/simulations/001-main/results
 ```
 
 Simulation directory:
 
 ```bash
 magnus run opalx-simulation -- \
-  --simulation output/my-run/inputs/ \
+  --simulation output/my-run/simulations/001-main/inputs/ \
   --input_file fodo.in \
-  --output output/my-run/results
+  --output output/my-run/simulations/001-main/results
 ```
 
 Generic Magnus behavior is documented in the `magnus` skill.
@@ -151,16 +151,16 @@ Do not repeatedly resubmit an unchanged failing simulation.
 
 ```bash
 magnus run opalx-simulation -- \
-  --simulation output/my-run/inputs/fodo.in \
+  --simulation output/my-run/simulations/001-main/inputs/fodo.in \
   --input_file fodo.in \
-  --output output/my-run/results
+  --output output/my-run/simulations/001-main/results
 ```
 
 ### Simulation directory
 
 ```bash
 magnus run opalx-simulation -- \
-  --simulation output/my-run/inputs/ \
+  --simulation output/my-run/simulations/001-main/inputs/ \
   --input_file fodo.in \
-  --output output/my-run/results
+  --output output/my-run/simulations/001-main/results
 ```

@@ -11,7 +11,7 @@ Analyze **existing, local OPALX results**. Read the local references at the work
 
 Respect the workflow boundary: the `opalx-simulator` skill handles Magnus execution and output retrieval. Do not submit simulations, modify source data or OPALX inputs, or change reusable library/skill code to fulfill an ordinary analysis request. A final LaTeX/PDF report belongs to [scientific-reporting](../scientific-reporting/SKILL.md).
 
-Before creating artifacts, follow the shared [run layout](../references/run-layout.md). Reuse the source run ID and choose a new analysis ID.
+Before creating artifacts, follow the shared [run layout](../references/run-layout.md). Reuse the parent run ID and source simulation ID when applicable; choose a new analysis ID.
 
 Follow the [default workflow scope](../references/workflow-scope.md). For an open-ended general run, complete the baseline below with supported numerical findings and limitations. Add analyses for specifically requested questions or material discrepancies; independent matching, analytical-model derivations and convergence studies are not default deliverables.
 
@@ -20,7 +20,7 @@ Follow the [default workflow scope](../references/workflow-scope.md). For an ope
 - **Input:** a local simulation-results directory (normally retrieved through Magnus), plus any user-requested observables, plots, comparison runs, or analysis constraints.
 - **Output:** figures, reproducible analysis script(s), relevant derived data, a short scientific summary, and an artifact manifest. Report incomplete or unsuccessful analysis explicitly.
 
-Write to a **new** `output/<run-id>/analysis/<analysis-id>/` directory, outside the raw simulation directory:
+Write individual analysis to a **new** `output/<run-id>/simulations/<simulation-id>/analysis/<analysis-id>/` directory. Write comparisons or design analysis to the parent `output/<run-id>/analysis/<analysis-id>/`. Both use this structure outside raw results:
 
 ```text
 scripts/analysis.py       # Executable, reproducible analysis and plotting
@@ -38,7 +38,7 @@ Use descriptive, stable filenames; do not silently overwrite a previous analysis
 
 Before writing analysis code, read the [Postprocess API](references/postprocess-api.md) for reader, calculation, validation, and export usage.
 
-1. Confirm the results directory exists and identify relevant files using `discover_run` and `select_file`. Inspect available `.stat` statistics and HDF5 snapshot steps with `read_stat` and `list_snapshots` as needed; read COF JSON with `read_closed_orbit`. Never guess a file, step number, or column name.
+1. Confirm each selected simulation's results directory exists and identify relevant files using `discover_run` and `select_file` on that directory. Do not implicitly combine files from sibling simulations. Inspect available `.stat` statistics and HDF5 snapshot steps with `read_stat` and `list_snapshots` as needed; read COF JSON with `read_closed_orbit`. Never guess a file, step number, or column name.
 2. Check run/job completion separately if Magnus result information is available; the existence of data files does not prove a successful simulation.
 3. Use `validate_run_files` with requirements appropriate to the task (e.g., statistics-only analysis need not require snapshots). For COF-only results use `required=("closed_orbits",)`. Run `validate_statistics`, `validate_snapshot` or `validate_closed_orbit` on data actually used. Inspect `issues`, `checks`, and `skipped`, not just `is_valid`.
 
@@ -79,16 +79,17 @@ Save the script that produced the figures and ensure it can be rerun using local
 
 Supply key numerical results in structured exports with quantity definitions, units, selected locations or snapshots, and validity qualifications. Record the convention for any calculated change or comparison.
 
-Write `analysis_summary.md` with: analysis objective; sources and selected snapshot(s); key measured/derived trends or values **with units**; notable anomalies; assumptions and validation failures/skips; and limits on interpretation. Keep it concise and separate observation from hypothesis. In `manifest.json`, record source paths, available job ID if known, analysis script, figure/data filenames, applied conversions, frame assumptions, validation outcome, and overall analysis status.
+Write `analysis_summary.md` with: analysis objective; sources and selected snapshot(s); key measured/derived trends or values **with units**; notable anomalies; assumptions and validation failures/skips; and limits on interpretation. Keep it concise and separate observation from hypothesis. In `manifest.json`, record parent run and source simulation IDs when available, source paths, available job ID if known, analysis script, figure/data filenames, applied conversions, frame assumptions, validation outcome, and overall analysis status.
 
 Return links/paths to the generated figures and analysis directory and briefly explain the findings. Clearly state which requested tasks could not be completed and why; do not claim simulation success or physical validity solely from passing numerical checks.
 
 The stage is complete when the requested or baseline diagnostics have been checked, readable figures and reproducible artifacts are saved, and material anomalies are resolved or explicitly qualified. Report unavailable diagnostics and their consequences without expanding into unrelated investigations.
 
+Update the parent `progress/study.md` with analysis status and artifact links.
+
 When a scientific report or full study is requested, hand the run and analysis
 directories, `analysis_summary.md`, `manifest.json`, and relevant figure/data
-paths to `scientific-reporting`. Keep the analysis summary and manifest as source
-artifacts; the user-facing report belongs in `scientific-reports/`.
+paths and source simulation IDs to `scientific-reporting`. Keep the analysis summary and manifest as source artifacts; the user-facing report belongs in `scientific-reports/`.
 
 ## Failure handling
 

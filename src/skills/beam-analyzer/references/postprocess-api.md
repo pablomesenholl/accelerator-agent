@@ -101,8 +101,8 @@ from postprocess import (
     to_summary, write_json, write_statistics_csv,
 )
 
-files = discover_run("output/my-run/results")
-out = Path("output/my-run/analysis/new-analysis/data")
+files = discover_run("output/my-run/simulations/001-main/results")
+out = Path("output/my-run/simulations/001-main/analysis/new-analysis/data")
 out.mkdir(parents=True, exist_ok=False)
 file_report = validate_run_files(files)
 stat_path = select_file(files, "statistics")  # Supply path=... if ambiguous.

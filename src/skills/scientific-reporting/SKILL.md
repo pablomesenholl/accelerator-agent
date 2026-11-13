@@ -10,7 +10,7 @@ description: Produce LaTeX/PDF reports explaining OPALX inputs, assumptions, phy
 Explain the configured physics, documented derivations, results, and their limitations using existing workflow artifacts. Follow the [default workflow scope](../references/workflow-scope.md) and the requested report timing:
 
 - **Standalone run:** for a full workflow, produce one final report using the available generation, validation, simulation and analysis evidence. Produce a separate input-physics report after generation and validation only when requested.
-- **Design, optimization, or numerical-tuning study:** when the study ends, produce one final report covering its iterations and relevant failed attempts, even if no acceptable configuration was found. Use stage records as evidence during the study; do not generate separate input-stage or per-run reports unless explicitly requested.
+- **Design, optimization, or numerical-tuning study:** when the study ends, produce one final report covering its iterations and relevant failed attempts, even if no acceptable configuration was found. Use stage records as evidence during the study; do not generate separate input-stage or per-simulation reports unless explicitly requested.
 
 For general runs, target a short scientific report of at most about three pages in total, including figures and references. Many requested figures or explicitly requested detail may justify additional pages. Prioritize the objective, essential configuration and physical model, numerical findings, selected figures, interpretation and material limitations. Link detailed stage evidence; do not add appendices by default to bypass the target or sacrifice readability or necessary qualifications to meet it.
 
@@ -25,7 +25,7 @@ Before creating artifacts, follow the shared [run layout](../references/run-layo
 
 Write to `output/<run-id>/scientific-reports/`, outside the raw simulation directory. Create it if needed; reuse it when continuing an existing run, preserving earlier report versions.
 
-For a multi-run study, use the initiating run's report directory unless the user specifies another location. Keep each iteration's source artifacts in its own run directory.
+For a multi-simulation study, use this parent run's report directory unless the user specifies another location. Each attempt's source artifacts remain under `simulations/<simulation-id>/`; comparison analysis belongs at the parent run level. Existing studies retain their original layout and source paths.
 
 Use descriptive, stable filenames; do not silently overwrite a previous report. Keep source input, result, and analysis files read-only.
 
@@ -33,7 +33,7 @@ Use descriptive, stable filenames; do not silently overwrite a previous report. 
 
 ### 1. Gather evidence and establish scope
 
-Read the specification, input bundles, and available records in `progress/`, then the relevant `analysis_summary.md`, `manifest.json`, exported data, and figures. Identify all covered run and analysis IDs, source paths, and available job IDs.
+Read the specification and parent `progress/study.md` where available, then the relevant simulation input bundles, stage records in their `progress/` directories, individual/comparison analysis summaries, manifests, data and figures. Identify the parent run ID, covered simulation and analysis IDs, source paths and available job IDs; use actual paths for existing layouts.
 
 Establish which stages completed and which scientific questions the evidence can answer. Match results to executed inputs using available digests and execution records; do not assume the current input bundle was executed. Distinguish input validation, simulation completion, and analysis validity: result files or a parser pass alone do not establish physical correctness.
 
@@ -59,7 +59,7 @@ Explain trends in relation to the objective, separating observations from hypoth
 
 ### 4. Document iterations when applicable
 
-Describe the objective, constraints, varied parameters, and selection criteria. Distinguish physical design changes from numerical adjustments. Summarize attempts with run IDs, changed settings, outcomes, available diagnostics, and documented reasons for subsequent adjustments; link to each attempt's stage records.
+Describe the objective, constraints, varied parameters, and selection criteria. Distinguish physical design changes from numerical adjustments. Summarize attempts with simulation IDs within the parent run (or source run IDs for existing layouts), changed settings, outcomes, available diagnostics, and documented reasons for subsequent adjustments; link to each attempt's stage records.
 
 Discuss scientifically informative failures in the main text; group repetitive infrastructure failures concisely with links to their records. For a closed-orbit study, distinguish failure to converge from a converged orbit found to be unstable, and include available closure residuals with units. Attribute a failure to numerical settings only when supported by evidence; otherwise describe it as an unresolved cause or hypothesis.
 
@@ -67,7 +67,7 @@ Explain the evidence for any selected configuration, disclose differences that l
 
 ### 5. Build and review the deliverables
 
-Package each report's `.tex`, required figures, and bibliography using relative paths. Use distinct filenames or versioned subdirectories for delivered versions. Include covered run and analysis IDs, source artifact paths, and the compilation command in the build note.
+Package each report's `.tex`, required figures, and bibliography using relative paths. Use distinct filenames or versioned subdirectories for delivered versions. Include parent run, covered simulation and analysis IDs, source artifact paths, and the compilation command in the build note.
 
 Compile using the project's pinned toolchain, choosing a new build directory for each attempt:
 
@@ -85,7 +85,7 @@ Compile at delivery and inspect the PDF for readable figures and tables, unclipp
 
 Before delivery, check that the concise model account explains the actual accelerator problem and its observables, with central equations displayed where useful. Identify any missing mathematical account explicitly. The report is complete when its supported claims agree with the source evidence, the PDF compiles, and the content is readable without unresolved substantive errors; follow failure handling if these conditions cannot be met.
 
-Return links to the report source and any successfully compiled PDF, briefly state the main scientific findings, and identify completed stages and remaining limitations. For an input-only report, make clear that simulation and results interpretation are pending.
+Return links to the report source and any successfully compiled PDF, briefly state the main scientific findings, and identify completed stages and remaining limitations. Update the parent study index with the report status and links. For an input-only report, make clear that simulation and results interpretation are pending.
 
 ## Failure handling
 

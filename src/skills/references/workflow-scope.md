@@ -8,9 +8,11 @@ are separate choices.
   request ends with generation and any requested validation; analyzing existing
   results does not require a new simulation or automatically require a PDF.
 - A full workflow covers generation, validation, simulation, baseline analysis,
-  and one final scientific report. Use stage records as evidence; produce separate
-  input-stage or per-run scientific reports only when requested. If a stage fails,
-  report the actual completion status and supported findings.
+  and one final scientific report. Keep related simulations and failed attempts
+  under one prompt/workflow run ID, following the [run layout](run-layout.md).
+  Use stage records as evidence; produce separate input-stage or per-simulation
+  scientific reports only when requested. If a stage fails, report the actual
+  completion status and supported findings.
 - Derive quantities needed to construct the requested setup and perform the
   required correctness checks. Resolve ambiguities that affect the input or
   interpretation; do not independently redesign or rematch a supplied setup.

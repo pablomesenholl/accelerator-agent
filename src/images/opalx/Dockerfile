@@ -20,7 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Download OPALX source from my source
 ARG OPALX_REPOSITORY=https://github.com/pablomesenholl/OPALX.git
-ARG OPALX_REVISION=cb3b8ceea29645c9533233c3f6f14c3410c2b263
+# parser-only branch: includes the native FFA COF performance improvements
+ARG OPALX_REVISION=ae29b977b84a0413dc42a9c21540749729506322
 
 WORKDIR /opt
 RUN git init OPALX \

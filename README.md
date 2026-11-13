@@ -69,10 +69,14 @@ results in tables where useful. Many requested figures or explicit requests for
 additional reporting detail may justify extra pages; additional analysis is a
 separate request. Design, optimization, and numerical-tuning studies produce one
 final LaTeX/PDF report covering the iterations and relevant failed attempts.
-Stage records provide the evidence; separate input-stage or per-run scientific
+Stage records provide the evidence; separate input-stage or per-simulation scientific
 reports are produced only when requested.
-Stage records remain in `progress/`, analysis artifacts in `analysis/<analysis-id>/`, and
-user-facing scientific reports in `scientific-reports/`; see the
+Each new prompt/workflow gets one `output/<run-id>/` directory. Individual
+configurations and failed attempts use `simulations/<simulation-id>/` within it,
+with their own `inputs/`, `progress/`, `results/` and `analysis/<analysis-id>/`.
+The parent `progress/study.md` indexes attempts, parent `analysis/` holds
+comparisons, and `scientific-reports/` holds the final report. Existing outputs
+keep their original layout; see the
 [shared run layout](src/skills/references/run-layout.md).
 
 Validation includes an OPALX parser-only syntax check and a review of the setup,

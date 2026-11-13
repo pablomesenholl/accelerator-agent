@@ -248,14 +248,14 @@ Do not restrict input construction to a fixed template or predefined lattice top
 
 ### Step 4: Prepare the simulation directory
 
-Create `output/<run-id>/inputs/` for the generated simulation input, using the shared run ID throughout the workflow.
+Create `output/<run-id>/simulations/<simulation-id>/inputs/` for the generated input. Reuse the parent run ID for this prompt/workflow and select a simulation ID following the shared run layout, even for a single configuration.
 
 Place the main `.in` file and all necessary supporting files inside this directory.
 
 For example:
 
 ```text
-output/<run-id>/inputs/
+output/<run-id>/simulations/<simulation-id>/inputs/
 ├── simulation.in
 └── supporting-files/
     └── ...
@@ -276,13 +276,14 @@ The resulting directory should be self-contained and portable to the OPALX execu
 
 ### Step 5: Return the generated input
 
-Save the generation summary, including parameters, derivations and assumptions, to `output/<run-id>/progress/generation.md`. Report the run directory and generated simulation input to the user or calling agent.
+Save the generation summary, including parameters, derivations and assumptions, to `output/<run-id>/simulations/<simulation-id>/progress/generation.md`. Report the parent run directory, simulation ID/directory and generated input to the user or calling agent; update the parent `progress/study.md` with generation status and links.
 
-Keep this generation record in `progress/`. For a requested scientific report or full study, pass it with the input bundle to [scientific-reporting](../scientific-reporting/SKILL.md) after validation. That skill owns the input-physics account and report timing: full workflows and iterative studies use this evidence for one final report, with separate input-stage or per-run reports only when requested.
+Keep this generation record in `progress/`. For a requested scientific report or full study, pass it with the input bundle to [scientific-reporting](../scientific-reporting/SKILL.md) after validation. That skill owns the input-physics account and report timing: full workflows and iterative studies use this evidence for one final report, with separate input-stage or per-simulation reports only when requested.
 
 Provide:
 
-- The simulation directory path.
+- The parent run directory and selected simulation ID/directory.
+- The portable input-bundle directory path.
 - The relative path of the main `.in` file.
 - A brief summary of the generated lattice and simulation configuration.
 - Any assumptions or documented defaults used.
@@ -290,7 +291,7 @@ Provide:
 
 The output paths must be compatible with the `opalx-simulator` interface:
 
-- `simulation` — path to the complete simulation directory.
+- `simulation` — path to the portable `inputs/` bundle, not the parent simulation directory.
 - `input_file` — relative path to the main `.in` file inside that directory.
 
 Do not launch the simulation.

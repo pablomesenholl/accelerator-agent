@@ -16,7 +16,7 @@ Validation has four layers: native OPALX syntax validation, structural and seman
 - Use the `opalx-simulator` skill only after validation succeeds.
 - Delegate nontrivial beam-optics calculations or physics design to a dedicated accelerator-physics skill when available.
 
-Before writing reports, follow the shared [run layout](../references/run-layout.md) and retain the run ID supplied by the preceding stage.
+Before writing reports, follow the shared [run layout](../references/run-layout.md) and retain the parent run and simulation IDs supplied by the preceding stage.
 
 Follow the [default workflow scope](../references/workflow-scope.md). Complete the four validation layers and record the status and handoff decision. Additional matching, stability or optimization studies belong to separately requested physics or analysis work rather than basic validation; retain all required correctness checks.
 
@@ -30,7 +30,7 @@ The input paths should remain compatible with the `opalx-simulator` skill. If th
 
 ## Outputs
 
-Save the validation report to `output/<run-id>/progress/validation.md` and return its path with the run directory. Include:
+Save the validation report to `output/<run-id>/simulations/<simulation-id>/progress/validation.md` and return its path with the parent run and selected simulation directory. Keep relative `progress/` paths below within that simulation. Include:
 
 - **Status:** `PASS`, `FAIL`, or `INCONCLUSIVE`.
 - **Validated input:** simulation path and relative main `.in` path.
@@ -56,7 +56,7 @@ the registered interface and submit the unchanged input bundle:
 
 ```bash
 magnus blueprint schema opalx-validation
-magnus run opalx-validation -- --simulation output/<run-id>/inputs --input_file main.in
+magnus run opalx-validation -- --simulation output/<run-id>/simulations/<simulation-id>/inputs --input_file main.in
 ```
 
 Replace the example paths with the prepared input. The blueprint accepts
@@ -79,7 +79,7 @@ Inspect the job result and logs, not just the Magnus job completion state:
   Startup failures, timeouts and unclassified errors do not establish a syntax error.
 
 Save the structured result, including diagnostics and provenance, to
-`output/<run-id>/progress/native-parser-<job-id>.json`; record its path and the
+`output/<run-id>/simulations/<simulation-id>/progress/native-parser-<job-id>.json`; record its path and the
 job ID in `progress/validation.md`. Preserve earlier attempts' evidence.
 If Layer 1 is unavailable or inconclusive, the overall result is `INCONCLUSIVE`
 unless another layer establishes `FAIL`; do not hand off to simulation.
@@ -124,8 +124,9 @@ Summarize all four layers and classify issues as **blocking errors** or **warnin
 
 For `PASS`, return the unchanged input paths for the `opalx-simulator` skill. For `FAIL` or `INCONCLUSIVE`, do not launch the simulation; report the problem and the next action needed.
 
-For a requested scientific report or full study, pass the run directory,
-`progress/generation.md`, and validation evidence to
+Update the parent `progress/study.md` with validation status, job IDs and links.
+For a requested scientific report or full study, pass the parent run directory,
+simulation ID/directory, its `progress/generation.md`, and validation evidence to
 [scientific-reporting](../scientific-reporting/SKILL.md) for the input-physics
 account. Deliver a separate input report before simulation only when requested;
 otherwise retain this evidence for the final workflow or study report. Keep the
