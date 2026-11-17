@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "name": "synthetic-dba-proton-ring",
+  "particle": "proton",
+  "kinetic_energy_MeV": 2.5,
+  "cells": 6,
+  "canonical_coordinates": ["x_m", "px_over_p0", "y_m", "py_over_p0", "zeta_m", "eta"],
+  "hamiltonian": "0.5*(px^2+py^2+kx*x^2+ky*y^2)-h*x*eta+eta^2/(2*gamma0^2)",
+  "longitudinal_convention": "zeta=beta0*c*(s/(beta0*c)-t); eta=(E-E0)/(beta0^2*E0), equal to dp/p0 to first order",
+  "model_order": "quadratic Hamiltonian; linear optics; hard edges; no RF or radiation",
+  "elements": [
+    {"name": "B1", "type": "sector_bend", "length_m": 1.0471975511965976, "h_per_m": 0.5, "kx_m2": 0.25, "ky_m2": 0.0},
+    {"name": "D1", "type": "drift", "length_m": 1.0, "h_per_m": 0.0, "kx_m2": 0.0, "ky_m2": 0.0},
+    {"name": "Q", "type": "quadrupole", "length_m": 0.2, "h_per_m": 0.0, "kx_m2": -2.84, "ky_m2": 2.84},
+    {"name": "D2", "type": "drift", "length_m": 1.0, "h_per_m": 0.0, "kx_m2": 0.0, "ky_m2": 0.0},
+    {"name": "B2", "type": "sector_bend", "length_m": 1.0471975511965976, "h_per_m": 0.5, "kx_m2": 0.25, "ky_m2": 0.0}
+  ]
+}
