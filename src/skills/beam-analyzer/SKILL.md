@@ -7,13 +7,15 @@ description: Analyze retrieved OPALX beam-dynamics results with the postprocess 
 
 ## Scope
 
+Use [workflow](../workflow/SKILL.md) to coordinate multi-stage requests and handoffs.
+
 Analyze **existing, local OPALX results**. Read the local references at the workflow stages indicated below. Use the project's `.venv` Python interpreter (`uv sync --locked` if setup is needed).
 
 Respect the workflow boundary: the `opalx-simulator` skill handles Magnus execution and output retrieval. Do not submit simulations, modify source data or OPALX inputs, or change reusable library/skill code to fulfill an ordinary analysis request. A final LaTeX/PDF report belongs to [scientific-reporting](../scientific-reporting/SKILL.md).
 
-Before creating artifacts, follow the shared [run layout](../references/run-layout.md). Reuse the parent run ID and source simulation ID when applicable; choose a new analysis ID.
+Before creating artifacts, follow the shared [run layout](../workflow/references/run-layout.md). Reuse the parent run ID and source simulation ID when applicable; choose a new analysis ID.
 
-Follow the [default workflow scope](../references/workflow-scope.md). For an open-ended general run, complete the baseline below with supported numerical findings and limitations. Add analyses for specifically requested questions or material discrepancies; independent matching, analytical-model derivations and convergence studies are not default deliverables.
+Follow the [default workflow scope](../workflow/references/workflow-scope.md). For an open-ended general run, complete the baseline below with supported numerical findings and limitations. Add analyses for specifically requested questions or material discrepancies; independent matching, analytical-model derivations and convergence studies are not default deliverables.
 
 ## Inputs and outputs
 

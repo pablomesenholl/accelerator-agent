@@ -16,14 +16,13 @@ motivated by the MiniMax FODO diagnosis.
    with related simulations and failed attempts under `simulations/`, and one
    final report at the run root when reporting is requested. See the approved
    implementation below; do not reorganize existing outputs automatically.
-4. **Workflow/orchestrator skill.** Evaluate promoting the shared workflow-scope
-   reference into a workflow skill that selects requested stages, coordinates
-   handoffs and completion, and applies the agreed study layout. Keep generation,
-   validation, simulation, analysis and reporting in their existing specialist
-   skills. Establish which shared rules the workflow skill owns and which must
-   remain discoverable for standalone stage requests, avoiding duplicated or
-   conflicting instructions. This does not require parallel agents or a new
-   execution framework.
+4. **Workflow skill — complete.** [workflow](../src/skills/workflow/SKILL.md)
+   selects requested stages and coordinates handoffs, completion and resumption.
+   Its references own shared scope and layout, also linked by standalone stage
+   skills. Specialists retain stage procedures and checks. Validation saves all
+   four layer decisions before simulation; workflow and simulator check that
+   evidence before submission. This is an instruction-level gate, without a new
+   execution framework. Behavioral verification awaits the next benchmarks.
 5. **Reference navigation and backend conventions.** Load references where they
    are needed and fill verified, version-specific documentation gaps. Reduce
    repeated source inspection without weakening checks for unresolved semantics.
@@ -79,7 +78,7 @@ output/<run-id>/
   Reporting uses the parent run's report directory and includes relevant failed
   attempts. Input-only and analysis-only requests retain their existing scope;
   this convention does not automatically trigger simulations or reports.
-- First edit `src/skills/references/run-layout.md` as the authoritative layout.
+- First edit `src/skills/workflow/references/run-layout.md` as the authoritative layout.
   Align path examples and handoffs in the five stage skills, workflow-scope
   reference, README, and the affected OPALX-input and postprocess API references.
   Keep descriptions brief and link to the shared layout rather than repeating it.

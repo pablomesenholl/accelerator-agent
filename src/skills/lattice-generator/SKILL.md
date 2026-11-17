@@ -7,6 +7,8 @@ description: Generate complete OPALX accelerator simulation input files and dire
 
 ## Overview
 
+Use [workflow](../workflow/SKILL.md) to coordinate multi-stage requests and handoffs.
+
 This skill translates natural-language accelerator simulation specifications into complete OPALX simulation inputs using the OPALX extended MAD-inspired input language.
 
 The generated simulation input consists of a main `.in` file and, when required, additional supporting files organized in a simulation directory.
@@ -19,9 +21,9 @@ This skill is responsible for input generation only.
 - Simulation execution and result retrieval are delegated to the `opalx-simulator` skill.
 - Magnus job management is part of the `magnus` skill.
 
-Before creating artifacts, follow the shared [run layout](../references/run-layout.md).
+Before creating artifacts, follow the shared [run layout](../workflow/references/run-layout.md).
 
-Follow the [default workflow scope](../references/workflow-scope.md). Derive quantities needed to construct the requested setup and resolve essential ambiguities; do not independently redesign or rematch supplied beam parameters. Generation ends with the portable input bundle and a concise record of parameters, necessary derivations, assumptions and unresolved dependencies, ready for validation.
+Follow the [default workflow scope](../workflow/references/workflow-scope.md). Derive quantities needed to construct the requested setup and resolve essential ambiguities; do not independently redesign or rematch supplied beam parameters. Generation ends with the portable input bundle and a concise record of parameters, necessary derivations, assumptions and unresolved dependencies, ready for validation.
 
 ## Inputs
 

@@ -72,7 +72,7 @@ output/<run-id>/
   Reanalysis creates a new analysis ID, not a new simulation. For external existing
   results, record source paths without moving or duplicating the raw data; an
   analysis-only task need not create simulation directories.
-- Use [scientific-reporting](../scientific-reporting/SKILL.md) for user-facing
+- Use [scientific-reporting](../../scientific-reporting/SKILL.md) for user-facing
   input-physics and completed-run reports in the parent `scientific-reports/`.
   Produce one final report for the prompt/workflow when requested, including
   comparisons and relevant failed attempts; separate simulation reports require

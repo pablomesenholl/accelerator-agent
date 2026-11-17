@@ -56,13 +56,16 @@ and data are shared across Python environments.
 
 ## Core OPALX workflow
 
+Use [workflow](src/skills/workflow/SKILL.md) to select stages, coordinate artifact
+handoffs and resume a study. Standalone stages use its shared scope and layout.
+
 The workflow has five stages: [input generation](src/skills/lattice-generator/SKILL.md),
 [validation](src/skills/lattice-validator/SKILL.md),
 [simulation](src/skills/opalx-simulator/SKILL.md),
 [analysis](src/skills/beam-analyzer/SKILL.md) and
 [scientific reporting](src/skills/scientific-reporting/SKILL.md).
 
-Follow the [default workflow scope](src/skills/references/workflow-scope.md): run
+Follow the [default workflow scope](src/skills/workflow/references/workflow-scope.md): run
 the requested stages and necessary prerequisites. A full workflow produces one
 final scientific report, normally at most about three pages, with numerical
 results in tables where useful. Many requested figures or explicit requests for
@@ -77,7 +80,7 @@ with their own `inputs/`, `progress/`, `results/` and `analysis/<analysis-id>/`.
 The parent `progress/study.md` indexes attempts, parent `analysis/` holds
 comparisons, and `scientific-reports/` holds the final report. Existing outputs
 keep their original layout; see the
-[shared run layout](src/skills/references/run-layout.md).
+[shared run layout](src/skills/workflow/references/run-layout.md).
 
 Validation includes an OPALX parser-only syntax check and a review of the setup,
 requested parameters and physical consistency. All checks must pass before

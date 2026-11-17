@@ -7,7 +7,9 @@ description: Produce LaTeX/PDF reports explaining OPALX inputs, assumptions, phy
 
 ## Scope
 
-Explain the configured physics, documented derivations, results, and their limitations using existing workflow artifacts. Follow the [default workflow scope](../references/workflow-scope.md) and the requested report timing:
+Use [workflow](../workflow/SKILL.md) to coordinate multi-stage requests and handoffs.
+
+Explain the configured physics, documented derivations, results, and their limitations using existing workflow artifacts. Follow the [default workflow scope](../workflow/references/workflow-scope.md) and the requested report timing:
 
 - **Standalone run:** for a full workflow, produce one final report using the available generation, validation, simulation and analysis evidence. Produce a separate input-physics report after generation and validation only when requested.
 - **Design, optimization, or numerical-tuning study:** when the study ends, produce one final report covering its iterations and relevant failed attempts, even if no acceptable configuration was found. Use stage records as evidence during the study; do not generate separate input-stage or per-simulation reports unless explicitly requested.
@@ -16,7 +18,7 @@ For general runs, target a short scientific report of at most about three pages 
 
 The `opalx-simulator` skill owns execution and retrieval; `beam-analyzer` owns analysis and figures. Reporting presents and interprets existing artifacts. Do not submit simulations, alter source inputs or results, or change reusable code. Do not derive new models for the setup, evaluate proxies, calculate new observables, or perform numerical comparisons; these belong to the physics or analysis stage.
 
-Before creating artifacts, follow the shared [run layout](../references/run-layout.md).
+Before creating artifacts, follow the shared [run layout](../workflow/references/run-layout.md).
 
 ## Inputs and outputs
 

@@ -7,6 +7,8 @@ description: Run prepared OPALX accelerator simulations through the Magnus backe
 
 ## Overview
 
+Use [workflow](../workflow/SKILL.md) to coordinate multi-stage requests and handoffs.
+
 This skill executes a prepared OPALX simulation through the `opalx-simulation` Magnus blueprint.
 
 A simulation may consist of a single OPALX input file or a simulation directory containing the main input file together with required supporting files.
@@ -15,9 +17,9 @@ The skill is responsible for simulation execution and result retrieval. It assum
 
 Use the `magnus` skill for generic Magnus configuration, job management, status checks, output retrieval, and backend error recovery.
 
-Before creating artifacts, follow the shared [run layout](../references/run-layout.md) and retain the parent run and simulation IDs supplied by the preceding stage. Relative `progress/` paths below belong to that simulation.
+Before creating artifacts, follow the shared [run layout](../workflow/references/run-layout.md) and retain the parent run and simulation IDs supplied by the preceding stage. Relative `progress/` paths below belong to that simulation.
 
-Follow the [default workflow scope](../references/workflow-scope.md). This stage ends with execution and retrieval evidence and the requested artifact paths, or an explicit failure status. Downstream analysis and reporting run only as part of the requested workflow.
+Follow the [default workflow scope](../workflow/references/workflow-scope.md). This stage ends with execution and retrieval evidence and the requested artifact paths, or an explicit failure status. Downstream analysis and reporting run only as part of the requested workflow.
 
 ## Inputs
 
@@ -52,7 +54,7 @@ Confirm that the requested OPALX simulation input exists.
 
 If a simulation directory is provided, identify the main OPALX `.in` file and confirm that required supporting files are present. Use its path relative to the simulation directory as `input_file`.
 
-Before submission, require an overall `PASS` from [lattice-validator](../lattice-validator/SKILL.md) for this unchanged input bundle and relative `input_file`. The report must include native parser evidence (job ID and input digest) and passing structural, specification and physics checks. A native syntax `PASS` alone is insufficient. If validation is missing, failed or inconclusive, return to `lattice-validator` before submitting; any input or supporting-file change requires revalidation.
+Before submission, read the saved `progress/validation.md` from [lattice-validator](../lattice-validator/SKILL.md) for this unchanged input bundle and relative `input_file`. Require overall `PASS`, explicit `PASS` for all four layers, and native parser evidence (job ID and input digest). A native syntax `PASS` or successful Magnus command alone is insufficient. If validation is missing, failed or inconclusive, return to `lattice-validator` before submitting; any input or supporting-file change requires revalidation.
 
 Do not rewrite or alter the physics configuration unless the user explicitly asks for a change. Input generation and modification belong to the corresponding model/lattice skill.
 

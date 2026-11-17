@@ -17,6 +17,8 @@ of reusable skills, Magnus blueprints, and execution scripts.
   analysis, and scientific reporting are separate stages. Reporting uses the
   available stage artifacts; it does not execute simulations or beam analysis.
   Report which stages actually completed.
+- Use `src/skills/workflow/SKILL.md` for physics workflow scope and handoffs;
+  standalone stages use its shared scope and layout references.
 - Preserve supplied physics parameters, document derived quantities and
   assumptions, and use the local OPALX reference before consulting official
   documentation for missing or ambiguous features.
