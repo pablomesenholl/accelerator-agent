@@ -32,6 +32,8 @@ The input paths should remain compatible with the `opalx-simulator` skill. If th
 
 ## Outputs
 
+Start each simulation’s record from [assets/validation-record.md](assets/validation-record.md); complete all four decisions and save the record before simulation submission.
+
 Save the validation report to `output/<run-id>/simulations/<simulation-id>/progress/validation.md` and return its path with the parent run and selected simulation directory. Keep relative `progress/` paths below within that simulation. Include:
 
 - **Status:** `PASS`, `FAIL`, or `INCONCLUSIVE`.

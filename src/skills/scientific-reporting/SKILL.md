@@ -35,9 +35,9 @@ Use descriptive, stable filenames; do not silently overwrite a previous report. 
 
 ### 1. Gather evidence and establish scope
 
-Read the specification and parent `progress/study.md` where available, then the relevant simulation input bundles, stage records in their `progress/` directories, individual/comparison analysis summaries, manifests, data and figures. Identify the parent run ID, covered simulation and analysis IDs, source paths and available job IDs; use actual paths for existing layouts.
+Read the specification and parent `progress/study.md` where available, then the relevant simulation input bundles, stage records (`generation.md`, `validation.md`, `simulation.md`) in each covered simulation's `progress/` directory, individual/comparison analysis summaries, manifests, data and figures. Identify the parent run ID, covered simulation and analysis IDs, source paths and available job IDs; use actual paths for existing layouts.
 
-Establish which stages completed and which scientific questions the evidence can answer. Match results to executed inputs using available digests and execution records; do not assume the current input bundle was executed. Distinguish input validation, simulation completion, and analysis validity: result files or a parser pass alone do not establish physical correctness.
+Link comparisons to their source simulation IDs and analysis evidence; take physics acceptance from analysis rather than execution status. Establish which stages completed and which scientific questions the evidence can answer. Match results to executed inputs using available digests and execution records; do not assume the current input bundle was executed. Distinguish input validation, simulation completion, and analysis validity: result files or a parser pass alone do not establish physical correctness.
 
 ### 2. Prepare the input-physics account
 

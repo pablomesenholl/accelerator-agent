@@ -89,6 +89,8 @@ For a simulation directory, `--simulation` points to the directory and `--input_
 
 Always pass `output/<run-id>/simulations/<simulation-id>/results/` as `--output`; do not rely on the blueprint default. Use a new simulation ID within the same parent run for a deliberate new execution; reconnecting or recovering retrieval retains the existing simulation and job ID.
 
+Start each simulation’s record from [assets/simulation-record.md](assets/simulation-record.md); replace placeholders at submission and update execution/retrieval evidence as it becomes available.
+
 Capture the job ID printed by Magnus in `output/<run-id>/simulations/<simulation-id>/progress/simulation.md` and the parent study index at submission. Record execution and retrieval status, including failures, there; place saved execution logs alongside the simulation record.
 
 ### Step 4: Check the result and retrieve outputs

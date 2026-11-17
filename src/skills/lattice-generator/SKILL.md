@@ -278,6 +278,8 @@ The resulting directory should be self-contained and portable to the OPALX execu
 
 ### Step 5: Return the generated input
 
+Start each simulation’s record from [assets/generation-record.md](assets/generation-record.md); replace placeholders and link detailed evidence instead of repeating it.
+
 Save the generation summary, including parameters, derivations and assumptions, to `output/<run-id>/simulations/<simulation-id>/progress/generation.md`. Report the parent run directory, simulation ID/directory and generated input to the user or calling agent; update the parent `progress/study.md` with generation status and links.
 
 Keep this generation record in `progress/`. For a requested scientific report or full study, pass it with the input bundle to [scientific-reporting](../scientific-reporting/SKILL.md) after validation. That skill owns the input-physics account and report timing: full workflows and iterative studies use this evidence for one final report, with separate input-stage or per-simulation reports only when requested.
