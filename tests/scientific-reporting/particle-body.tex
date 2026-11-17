@@ -1,0 +1,32 @@
+\section{Objective and outcome}
+Typesetting fixture only: no simulation or beam analysis was performed.
+\section{Physical basis and model}
+The ellipse convention follows Courant and Snyder~\cite{courant1958}:
+\begin{equation}
+\begin{aligned}
+ \gamma x^2+2\alpha xx'+\beta x'^2 &= \varepsilon, \\
+ \gamma &= (1+\alpha^2)/\beta .
+\end{aligned}
+\label{eq:ellipse}
+\end{equation}
+\begin{table}[htbp]
+\centering
+\begin{tabularx}{\linewidth}{Y r l Y}
+\toprule Quantity & Value & Unit & Qualification \\
+\midrule
+Initial horizontal RMS beam size & 1.0 & mm & Synthetic typesetting value only \\
+Final horizontal RMS beam size & 1.1 & mm & Same convention; no scientific result implied \\
+\bottomrule
+\end{tabularx}
+\caption{Example particle diagnostics.}\label{tab:result}
+\end{table}
+Equation~\ref{eq:ellipse} and Table~\ref{tab:result} have resolved references.
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth,height=0.20\textheight,keepaspectratio]{figure.png}
+\caption{Existing project image used to check figure sizing, not beam data.}
+\end{figure}
+\section{Conclusion and limitations}
+No physical findings; this fixture checks layout and inspection only.
+\bibliographystyle{plain}
+\bibliography{references}

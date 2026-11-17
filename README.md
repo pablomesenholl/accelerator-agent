@@ -124,6 +124,17 @@ The fresh build directory contains the PDF on success, TeX/BibTeX diagnostics,
 Inspect warnings and the rendered PDF before delivery. Compilation does not run
 simulations or analysis. See [report compilation checks](tests/scientific-reporting/README.md).
 
+Start reports from the [LaTeX template](src/skills/scientific-reporting/assets/report-template.tex).
+After compilation, render and inspect the completed build:
+
+```bash
+.venv/bin/python scripts/inspect_report.py output/<run-id>/scientific-reports/build-v1
+```
+
+The locked `pypdfium2` dependency supplies page counts, text and PNG previews.
+Read `inspection/inspection.json` and view the page PNGs; successful rendering
+does not certify visual or scientific correctness. See [layout and review guidance](src/skills/scientific-reporting/references/report-layout.md).
+
 ## Standalone Python agent
 
 The standalone Google ADK + LiteLLM CLI defaults to local Ollama `qwen3.5:2b`,

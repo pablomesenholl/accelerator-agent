@@ -1,0 +1,64 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=22mm]{geometry}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\emergencystretch}{1em}
+\title{Scientific report title}
+\author{accelerator-agent}
+\date{}
+\begin{document}
+\maketitle
+% Replace the example body with evidence from the requested workflow.
+% BEGIN BODY
+\section{Objective and outcome}
+State the question, completed stages and principal finding. Identify the run and
+simulations; keep detailed artifact paths in the build note.
+
+\section{Physical basis and model}
+Describe the configured model and assumptions using existing stage evidence.
+Split long equations, for example:
+\begin{equation}
+\begin{aligned}
+ E_0 &= m c^2 + T_0, & \gamma_0 &= \frac{E_0}{m c^2}, \\
+ \beta_0 &= \sqrt{1-\gamma_0^{-2}}, & p_0 &= \beta_0\gamma_0 m c .
+\end{aligned}
+\label{eq:reference}
+\end{equation}
+Define symbols and units; cite verified sources with \verb|\cite{key}|.
+
+\begin{table}[htbp]
+\centering
+\begin{tabularx}{\linewidth}{Y r l Y}
+\toprule
+Quantity & Value & Unit & Source or qualification \\
+\midrule
+Reference kinetic energy & 2.5 & MeV & Example only; replace from stage evidence \\
+\bottomrule
+\end{tabularx}
+\caption{Configured parameters; distinguish supplied and derived values.}
+\label{tab:parameters}
+\end{table}
+
+\section{Results and limitations}
+Present existing numerical findings and their validity limits. Remove unused
+sections; add an attempt/comparison table only when the study needs it.
+% Figure pattern: keepaspectratio prevents distortion with both constraints.
+% \begin{figure}[htbp]
+% \centering
+% \includegraphics[width=\linewidth,height=0.32\textheight,keepaspectratio]{figures/result.pdf}
+% \caption{Observable, units, source simulation and supported interpretation.}
+% \label{fig:result}
+% \end{figure}
+
+\section{Conclusion}
+State supported findings and unresolved questions without repeating the tables.
+% Add verified bibliography entries to a local references.bib when needed:
+% \bibliographystyle{plain}
+% \bibliography{references}
+% END BODY
+\end{document}

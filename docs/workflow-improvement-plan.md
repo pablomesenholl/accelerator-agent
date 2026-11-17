@@ -28,6 +28,8 @@ motivated by the MiniMax FODO diagnosis.
    repeated source inspection without weakening checks for unresolved semantics.
 6. **Lightweight report and stage-record templates.** Reduce repeated prose and
    formatting errors while preserving useful evidence and report flexibility.
+   LaTeX report template and PDF inspection helper are complete (see below);
+   stage-record templates remain a separate follow-up within this step.
 7. **Reusable baseline analysis.** Build on the existing postprocess library to
    reduce run-specific code generation. Add tested analytical transport helpers
    only where justified by supported analysis needs.
@@ -40,6 +42,77 @@ After the smaller changes, repeat a benchmark with explicit acceptance criteria
 and record per-stage time, token use, correctness and interventions before
 committing to larger automation work. Investigate MiniMax service connectivity
 separately from repository workflow changes.
+
+## Reporting implementation for step 6
+
+Implemented and checked with eight passing offline reporting tests and visually
+reviewed particle/COF fixtures in `output/report-layout-check-20261117/`.
+Stage-record templates remain pending. The implementation follows this scope:
+
+Keep the pinned Tectonic compiler, installation, cache and existing build command.
+Address repeated layout repairs and unreliable inspection without changing the
+scientific scope or running analysis during reporting. Implement in this order:
+
+1. **Provide one report template.** Add
+   `src/skills/scientific-reporting/assets/report-template.tex` with a small,
+   tested preamble, bundled fonts, readable margins, a compact title and stable
+   equation, parameter/result table and captioned-figure examples. Use multiline
+   equations, wrapping table columns and figures constrained by both page width
+   and height. Avoid custom physics macros, forced float placement and manual
+   spacing fixes. Keep optional sections removable; a short single-run report
+   and a study with failed attempts use the same template. Copy it into each
+   run's report directory and edit content there. The existing approximate
+   three-page target guides content selection, not font shrinking or an absolute
+   pagination gate.
+2. **Add one PDF inspection dependency.** Use `pypdfium2` through the project
+   `.venv` for actual page counts, dimensions, text extraction and rasterization,
+   rather than shell-discovered utilities or PDF-byte regexes. Lock the chosen
+   compatible version with `uv`; reuse Pillow for PNG export if already present.
+   Confirm installation and rendering on the supported Linux platform. This is
+   an inspection dependency, not a compiler replacement. See its
+   [official usage examples](https://pypdfium2-team.github.io/pypdfium2/readme.html).
+3. **Implement `scripts/inspect_report.py`.** Accept a completed build directory,
+   read `build.json` and verify the recorded PDF hash before inspecting that PDF.
+   Write to a fresh `inspection/` directory inside the build: `inspection.json`,
+   extracted page text and numbered page PNGs at a fixed, recorded resolution
+   (initially 150 dpi). Process pages sequentially. Record PDF hash, renderer
+   version, page count/dimensions, output paths and inspection errors. Read the
+   final TeX and BibTeX logs for unresolved references/citations and overfull
+   boxes, retaining source locations and widths where available. Do not classify
+   temporary first-pass messages in `compile.log` as final unresolved errors.
+   Missing logs or failed page rendering must be explicit incomplete checks.
+4. **Separate findings from review decisions.** Make helper failures return
+   nonzero; successful extraction with warnings still returns a structured
+   findings record. Separate unresolved references/citations, overflow requiring
+   review, and advisory formatting notices. Underfull boxes, float-placement
+   notices and exceeding the normal page target do not automatically trigger
+   another build. Rendering success does not establish readability, scientific
+   correctness or absence of clipping; the agent must inspect the page images.
+   Record content/visual review and any limitations in the existing build note,
+   tied to the PDF hash. A new build requires inspection of its own PDF.
+5. **Integrate with scientific reporting.** Update its skill and README with the
+   template location and two direct commands: compile, then inspect. Reuse the
+   existing compiler's status and `build.json`; avoid shell pipelines and warning
+   greps. Read the helper's findings, inspect all final page PNGs, check content
+   against upstream artifacts, and batch necessary corrections before rebuilding.
+   Prefer revising overly long content or a wide equation/table to adjusting
+   global spacing. State visual-review limitations if image inspection is
+   unavailable. Keep the detailed template/inspection guidance in one short
+   reporting reference. Other stage skills retain their existing boundaries.
+6. **Verify with focused reporting fixtures.** Under `tests/scientific-reporting/`,
+   exercise a compact particle report and a COF comparison with equations, long
+   labels, tables, bibliography and existing figures. Check real page counts and
+   PNG creation; resolved final references despite first-pass warnings; retained
+   unresolved/overflow findings; corrupt or mismatched PDF failures; and refusal
+   to overwrite inspection outputs. Compile offline once resources are warmed,
+   inspect rendered fixtures visually and verify that source artifacts remain
+   unchanged. Generated previews belong under `output/`. No simulations are
+   needed; the user will assess model behavior in later benchmarks.
+
+Keep this update limited to the template, inspection helper/dependency, reporting
+guidance and focused fixtures. Stage-record templates, historical source
+snapshots, automatic layout repair and wider workflow automation remain follow-up
+work. Do not mark step 6 complete until its remaining scope is handled.
 
 ## Approved implementation of step 3
 

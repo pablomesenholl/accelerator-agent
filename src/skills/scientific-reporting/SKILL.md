@@ -69,6 +69,8 @@ Explain the evidence for any selected configuration, disclose differences that l
 
 ### 5. Build and review the deliverables
 
+Start from [assets/report-template.tex](assets/report-template.tex), copied into the run's report directory. Remove example content and unused sections; retain its layout defaults. Read [report layout and inspection](references/report-layout.md) for table/figure patterns and review decisions.
+
 Package each report's `.tex`, required figures, and bibliography using relative paths. Use distinct filenames or versioned subdirectories for delivered versions. Include parent run, covered simulation and analysis IDs, source artifact paths, and the compilation command in the build note.
 
 Compile using the project's pinned toolchain, choosing a new build directory for each attempt:
@@ -77,13 +79,16 @@ Compile using the project's pinned toolchain, choosing a new build directory for
 .venv/bin/python scripts/compile_report.py \
   output/<run-id>/scientific-reports/report.tex \
   --outdir output/<run-id>/scientific-reports/build-v1
+
+.venv/bin/python scripts/inspect_report.py \
+  output/<run-id>/scientific-reports/build-v1
 ```
 
 Use bundled fonts and BibTeX-compatible bibliographies. See
 [compiler setup and troubleshooting](../../../README.md#latex-report-compilation)
 if needed.
 
-Compile at delivery and inspect the PDF for readable figures and tables, unclipped content, correct equations and units, resolved citations and cross-references, and agreement with source values. Batch corrections and rebuild as needed for substantive errors or readability problems. Harmless formatting warnings alone do not require another build. Report any compilation or visual-review limitations.
+Read `inspection/inspection.json` and view every final page PNG. Check readable figures/tables, unclipped content, equations/units, resolved citations/references and agreement with source values. Rendering and extracted text do not establish visual review. Record content and visual review separately in the build note, with the PDF hash and any limitations. Batch substantive corrections; inspect each new build's PDF. Harmless formatting notices alone do not require another build.
 
 Before delivery, check that the concise model account explains the actual accelerator problem and its observables, with central equations displayed where useful. Identify any missing mathematical account explicitly. The report is complete when its supported claims agree with the source evidence, the PDF compiles, and the content is readable without unresolved substantive errors; follow failure handling if these conditions cannot be met.
 

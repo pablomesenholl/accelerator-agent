@@ -13,6 +13,7 @@ dependencies = [
     "google-adk>=1.0,<2",
     # ADK 1.39.1 compatibility range; see python-agent/README.md.
     "litellm>=1.83.7,<=1.83.14",
+    "pypdfium2>=5,<6",
 ]
 
 [build-system]
